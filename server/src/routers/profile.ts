@@ -1,6 +1,7 @@
 import { PageRequestDocument } from "#/@types/misc";
-import { isAuthenticated } from "#/middleware/auth/auth";
+import { isAuth, isAuthenticated } from "#/middleware/auth/auth";
 import Audio from "#/models/audios";
+import History from "#/models/history";
 import Playlist from "#/models/playlist";
 import users from "#/models/users";
 import { Router } from "express";
@@ -181,5 +182,58 @@ profileRouter.get(
     });
   }
 );
+
+// recommended: finding user liked kinder items
+profileRouter.get("/recommended", isAuth, async (req, res) => {
+  const user = req.user;
+
+  if (user) {
+    // const audios = await Audio.aggregate([{ $match: { owner: user } },]);
+
+    // fetch user history
+    const history = await History.aggregate([
+      { $match: { owner: user?.id } },
+      { $unwind: "$all" },
+    ]);
+
+    return res.status(200).json({ audios: history });
+  }
+
+  const audios = await Audio.aggregate([
+    { $match: { _id: { $exists: true } } },
+    {
+      $sort: {
+        "likes.count": -1,
+      },
+    },
+    { $limit: 10 },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+      },
+    },
+    {
+      $unwind: "$owner",
+    },
+    {
+      $project: {
+        _id: 0,
+        id: "$_id",
+        name: "$name",
+        title: "$title",
+        about: "$about",
+        category: "$category",
+        file: "$file.url",
+        poster: "$poster.url",
+        owner: { name: "$owner.name", id: "$owner._id" },
+      },
+    },
+  ]);
+
+  res.status(200).json({ audios });
+});
 
 export default profileRouter;

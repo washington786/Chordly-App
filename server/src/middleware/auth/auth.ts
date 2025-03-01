@@ -64,3 +64,25 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   req.token = token;
   next();
 };
+
+export const isAuth: RequestHandler = async (req, res, next) => {
+  const { authorization } = req.headers;
+  const token = authorization?.split("Bearer ")[1];
+
+  if (token) {
+    const verified = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    console.log(verified);
+    const id = verified.userId;
+
+    const user = await users.findOne({ _id: id, tokens: token });
+
+    if (!user) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    req.user = user;
+    req.token = token;
+  }
+
+  next();
+};

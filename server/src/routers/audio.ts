@@ -82,9 +82,7 @@ audio.patch(
     const { audioId } = req.params;
     const ownerId = req.user?.id;
 
-    const audioFound = await Audio.findOne(
-      { _id: audioId, owner: ownerId }
-    );
+    const audioFound = await Audio.findOne({ _id: audioId, owner: ownerId });
 
     if (!audioFound) {
       return res.status(404).json({ error: "Audio not found" });
@@ -117,5 +115,22 @@ audio.patch(
     res.status(200).json({ message: "Audio updated successfully", audioFound });
   }
 );
+
+audio.get("/latest", async (req, res) => {
+  const list = await Audio.find().sort("-createdAt").populate("owner");
+  const formatted = list.map((item) => {
+    const { _id, about, category, title, poster, file, owner } = item;
+    return {
+      id: _id,
+      about,
+      category,
+      title,
+      poster: poster.url,
+      file: file.url,
+      owner: { name: owner?.name, id: owner?._id },
+    };
+  });
+  res.status(200).json({ audios: formatted });
+});
 
 export default audio;
