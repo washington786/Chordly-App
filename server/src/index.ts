@@ -11,6 +11,9 @@ import playlistRouter from "./routers/playlist";
 import profileRouter from "./routers/profile";
 import historyRouter from "./routers/history";
 
+import "./utils/cron.ts";
+import { errorHandler } from "./middleware/error";
+
 const app = express();
 
 app.use(express.json());
@@ -25,6 +28,8 @@ app.use("/favorites", favorites);
 app.use("/playlist", playlistRouter);
 app.use("/profile", profileRouter);
 app.use("/history", historyRouter);
+
+app.use(errorHandler);
 
 app
   .listen(PORT)

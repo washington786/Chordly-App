@@ -1,3 +1,4 @@
+import { PageRequestDocument } from "#/@types/misc";
 import { isAuthenticated } from "#/middleware/auth/auth";
 import { isVerified } from "#/middleware/auth/authorization";
 import Audio from "#/models/audios";
@@ -69,29 +70,76 @@ favorites.post("/", isAuthenticated, isVerified, async (req, res) => {
 });
 
 favorites.get("/", isAuthenticated, isVerified, async (req, res) => {
-  const ownerId = req.user?.id;
-  const favorites = await Favorites.find({ owner: ownerId }).populate({
-    path: "items",
-    populate:{
-        path:"owner"
+  // const ownerId = req.user?.id;
+  const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
+
+  const _favorites = await Favorites.aggregate([
+    { $match: { owner: req.user?.id } },
+    {
+      $project: {
+        audioIds: {
+          $slice: [
+            "$$items",
+            parseInt(pageNo) * parseInt(limit),
+            parseInt(limit),
+          ],
+        },
+      },
+    },
+    {
+      $unwind: "$audioIds",
+    },
+    {
+      $lookup: {
+        from: "audios",
+        localField: "audioIds",
+        foreignField: "_id",
+        as: "audioInfo",
+      },
+    },
+    {
+      $unwind: "$audioInfo",
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "audioInfo.owner",
+        foreignField: "_id",
+        as: "ownerInfo",
+      },
+    },
+    {
+      $unwind: "$ownerInfo",
+    },
+    {
+      $project:{
+        _id:0,
+        id:"$audioInfo._id",
+        title:"$audioInfo.title",
+        about:"$audioInfo.about",
+        // category:"$audioInfo.category",
+        file:"$audioInfo.file.url",
+        poster:"$audioInfo.poster.url",
+        owner:{name:"$ownerInfo.name",id:"$ownerInfo._id"},
+      }
     }
-  });
-  if (!favorites) {
-    return res.status(404).json({ message: "No favorites found" });
-  }
-  favorites?.items;
-  res.status(200).json({ favorites });
+  ]);
+
+  res.status(200).json({ audios:_favorites });
 });
 
-favorites.get('/is-fav',isAuthenticated,async (req,res)=>{
-    const audioId = req.query.audioId;
-    if(isValidObjectId(audioId)){
-      return res.status(422).json({message:"invalid audio id"})
-    }
+favorites.get("/is-fav", isAuthenticated, async (req, res) => {
+  const audioId = req.query.audioId;
+  if (isValidObjectId(audioId)) {
+    return res.status(422).json({ message: "invalid audio id" });
+  }
 
-    const favorite = await Favorites.findOne({owner:req.user?.id, items:audioId});
+  const favorite = await Favorites.findOne({
+    owner: req.user?.id,
+    items: audioId,
+  });
 
-    res.status(200).json({favorite:favorite?true:false});
+  res.status(200).json({ favorite: favorite ? true : false });
 });
 
 export default favorites;

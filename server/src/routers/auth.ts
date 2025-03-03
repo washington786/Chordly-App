@@ -47,6 +47,13 @@ authRouter.post(
   validate(accountSchema),
   async (req: createUser, res) => {
     const { email, password, name } = req.body;
+
+    const existing = await users.findOne({ email: email });
+
+    if (existing) {
+      return res.status(400).json({ message: "Account Email already exists" });
+    }
+    
     const _user = new users({ email, password, name });
     const created_user = await _user.save();
 
@@ -85,6 +92,7 @@ authRouter.post(
     const { token, userId } = req.body;
 
     const user = await emailVerificationToken.findOne({ owner: userId });
+
     if (!user) {
       return res.status(403).json({ error: "User not found" });
     }
@@ -127,6 +135,10 @@ authRouter.post("/forgot-password", async (req, res) => {
 
   if (!user) {
     return res.status(404).json({ error: "User account not found" });
+  }
+
+  if (user.verified) {
+    return res.status(422).json({ error: "User account already verified." });
   }
 
   // generate link
