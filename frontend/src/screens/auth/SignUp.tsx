@@ -5,12 +5,14 @@ import GlobalStyles from "@styles/GlobalStyles";
 import Gradient from "@components/Gradient";
 import Header from "@components/auth/Header";
 import Input from "@components/auth/Input";
-import { Formik } from "formik";
+import { Formik, FormikHelpers } from "formik";
 import { signUpValidationSchema } from "@utils/SignUpValidationSchema";
 import InputError from "@components/auth/InputError";
 import InputWrapper from "@components/auth/InputWrapper";
 import { white } from "@styles/Colors";
-import { useNavigation } from "@react-navigation/native";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
+import client from "src/api/client";
+import { AuthPropTypes } from "src/@types/AuthPropTypes";
 
 interface Auth {
   name: string;
@@ -25,14 +27,33 @@ const initialVals: Auth = {
 };
 
 const SignUp = () => {
-  const navigation = useNavigation();
   const [toggle, setToggle] =
     useState<Boolean>(false); /* for toggling the password visibility. */
 
-  const screen = "sign-in" as never;
+  const navigation = useNavigation<NavigationProp<AuthPropTypes>>();
+
   function handleSignAccount() {
-    navigation.navigate(screen);
+    navigation.navigate("signIn");
   }
+
+  async function handleSubmit(values: Auth, actions: FormikHelpers<Auth>) {
+    try {
+      // 192.168.0.221
+      const { data } = await client.post("/auth/register", {
+        ...values,
+      });
+
+      if (data) {
+        navigation.navigate("verification", {
+          userInfo: data.user,
+          message: data.message,
+        });
+      }
+    } catch (error) {
+      console.log("sign up error: ", error);
+    }
+  }
+
   return (
     <Gradient>
       <KeyboardAvoidanceView>
@@ -43,14 +64,17 @@ const SignUp = () => {
 
         <Formik
           initialValues={initialVals}
-          onSubmit={(value) => {
-            console.log("====================================");
-            console.log(value);
-            console.log("====================================");
-          }}
+          onSubmit={handleSubmit}
           validationSchema={signUpValidationSchema}
         >
-          {({ handleSubmit, touched, values, handleChange, errors }) => (
+          {({
+            handleSubmit,
+            touched,
+            values,
+            handleChange,
+            errors,
+            isSubmitting,
+          }) => (
             <InputWrapper>
               <Input
                 placeholder="Username"
@@ -105,9 +129,11 @@ const SignUp = () => {
                 uppercase
                 labelStyle={[GlobalStyles.btnContent]}
                 style={[GlobalStyles.button]}
+                loading={isSubmitting}
+                disabled={isSubmitting}
                 onPress={() => handleSubmit()}
               >
-                create account
+                {!isSubmitting ? "create account" : "submitting..."}
               </Button>
             </InputWrapper>
           )}

@@ -2,23 +2,42 @@ import React from "react";
 import Gradient from "@components/Gradient";
 import KeyboardAvoidanceView from "@components/KeyboardAvoidanceView";
 import Header from "@components/auth/Header";
-import { Formik } from "formik";
+import { Formik, FormikHelpers } from "formik";
 import { ForgotPassValidationSchema } from "@utils/SignUpValidationSchema";
 import InputWrapper from "@components/auth/InputWrapper";
 import Input from "@components/auth/Input";
 import InputError from "@components/auth/InputError";
 import { Button } from "react-native-paper";
 import GlobalStyles from "@styles/GlobalStyles";
-import { useNavigation } from "@react-navigation/native";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { AuthPropTypes } from "src/@types/AuthPropTypes";
+import client from "src/api/client";
+
+interface Auth {
+  email: string;
+}
 
 const initialValues = {
   email: "",
 };
 const ForgotPassword = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<AuthPropTypes>>();
 
   function handleBack() {
     navigation.goBack();
+  }
+
+  async function handleSubmit(values: Auth, action: FormikHelpers<Auth>) {
+    try {
+      const res = await client.post("/auth/forgot-password", {
+        email: values.email,
+      });
+      if (res.status === 200) {
+        navigation.navigate("signIn");
+      }
+    } catch (error) {
+      console.log("forgot password: ", error);
+    }
   }
 
   return (
@@ -30,14 +49,17 @@ const ForgotPassword = () => {
         />
         <Formik
           initialValues={initialValues}
-          onSubmit={(values) => {
-            console.log("====================================");
-            console.log(values);
-            console.log("====================================");
-          }}
+          onSubmit={handleSubmit}
           validationSchema={ForgotPassValidationSchema}
         >
-          {({ values, errors, handleChange, handleSubmit, touched }) => {
+          {({
+            values,
+            errors,
+            handleChange,
+            handleSubmit,
+            touched,
+            isSubmitting,
+          }) => {
             return (
               <InputWrapper>
                 <Input
@@ -60,8 +82,10 @@ const ForgotPassword = () => {
                   labelStyle={[GlobalStyles.btnContent]}
                   style={[GlobalStyles.button]}
                   onPress={() => handleSubmit()}
+                  loading={isSubmitting}
+                  disabled={isSubmitting}
                 >
-                  send link
+                  {!isSubmitting ? "send link" : "Submitting..."}
                 </Button>
               </InputWrapper>
             );

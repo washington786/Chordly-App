@@ -11,8 +11,8 @@ export const signUpValidationSchema = yup.object().shape({
     .trim()
     .min(6, "Password must be at least 6 characters long")
     .matches(
-      //   /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-      /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/,
+        /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+      // /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/,
       "Password is weak."
     )
     .required("Password is required"),

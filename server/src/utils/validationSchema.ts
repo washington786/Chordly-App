@@ -40,6 +40,18 @@ export const verifyEmailBody = yup.object().shape({
     })
     .required("userId is required"),
 });
+export const reVerifyEmailBody = yup.object().shape({
+  userId: yup
+    .string()
+    .transform(function (value) {
+      if (this.isType(value) && isValidObjectId(value)) {
+        return value;
+      } else {
+        return "";
+      }
+    })
+    .required("userId is required"),
+});
 
 export const passResetSchema = yup.object().shape({
   token: yup

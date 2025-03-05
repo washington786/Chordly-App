@@ -7,19 +7,20 @@ import {
   SignIn,
   SignUp,
 } from "@utils/Exports";
+import { AuthPropTypes } from "src/@types/AuthPropTypes";
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<AuthPropTypes>();
 
 const AuthNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{ headerShown: false }}
-      initialRouteName="sign-in"
+      initialRouteName="signIn"
     >
-      <Stack.Screen name="sign-up" component={SignUp} />
-      <Stack.Screen name="sign-in" component={SignIn} />
-      <Stack.Screen name="reset-password" component={ForgotPassword} />
-      <Stack.Screen name="otp-verify" component={OneTimePinVerification} />
+      <Stack.Screen name="signUp" component={SignUp} />
+      <Stack.Screen name="signIn" component={SignIn} />
+      <Stack.Screen name="resetPassword" component={ForgotPassword} />
+      <Stack.Screen name="verification" component={OneTimePinVerification} />
     </Stack.Navigator>
   );
 };

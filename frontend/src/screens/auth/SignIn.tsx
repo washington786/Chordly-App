@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Gradient from "@components/Gradient";
 import KeyboardAvoidanceView from "@components/KeyboardAvoidanceView";
 import Header from "@components/auth/Header";
-import { Formik } from "formik";
+import { Formik, FormikHelpers } from "formik";
 import Input from "@components/auth/Input";
 import InputError from "@components/auth/InputError";
 import { Button, Text, TextInput } from "react-native-paper";
@@ -11,7 +11,14 @@ import { white } from "@styles/Colors";
 import GlobalStyles from "@styles/GlobalStyles";
 import InputWrapper from "@components/auth/InputWrapper";
 import { signInValidationSchema } from "@utils/SignUpValidationSchema";
-import { useNavigation } from "@react-navigation/native";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { AuthPropTypes } from "src/@types/AuthPropTypes";
+import client from "src/api/client";
+
+interface SignInDoc {
+  email: string;
+  password: string;
+}
 
 const initialValues = {
   email: "",
@@ -19,14 +26,31 @@ const initialValues = {
 };
 const SignIn = () => {
   const [toggle, setToggle] = useState<Boolean>(false);
-  const navigation = useNavigation();
-  const screen = "sign-up" as never;
-  const screen_forgot = "reset-password" as never;
+  const navigation = useNavigation<NavigationProp<AuthPropTypes>>();
+
   function handleCreateAccount() {
-    navigation.navigate(screen);
+    navigation.navigate("signUp");
   }
   function handleForgotPassword() {
-    navigation.navigate(screen_forgot);
+    navigation.navigate("resetPassword");
+  }
+
+  async function handleSubmit(
+    values: SignInDoc,
+    actions: FormikHelpers<SignInDoc>
+  ) {
+    try {
+      const res = await client.post("/auth/login", { ...values });
+
+      if (res.status === 200) {
+        const { data } = res;
+        console.log(data);
+      }
+    } catch (error) {
+      console.log("====================================");
+      console.log("Login Error:", error);
+      console.log("====================================");
+    }
   }
   return (
     <Gradient>
@@ -37,14 +61,17 @@ const SignIn = () => {
         />
         <Formik
           initialValues={initialValues}
-          onSubmit={(values) => {
-            console.log("====================================");
-            console.log(values);
-            console.log("====================================");
-          }}
+          onSubmit={handleSubmit}
           validationSchema={signInValidationSchema}
         >
-          {({ values, errors, handleChange, handleSubmit, touched }) => {
+          {({
+            values,
+            errors,
+            handleChange,
+            handleSubmit,
+            touched,
+            isSubmitting,
+          }) => {
             return (
               <InputWrapper>
                 <Input
@@ -90,8 +117,10 @@ const SignIn = () => {
                   labelStyle={[GlobalStyles.btnContent]}
                   style={[GlobalStyles.button]}
                   onPress={() => handleSubmit()}
+                  disabled={isSubmitting}
+                  loading={isSubmitting}
                 >
-                  sign in
+                  {!isSubmitting ? "sign in" : "submitting..."}
                 </Button>
               </InputWrapper>
             );

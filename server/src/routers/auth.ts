@@ -14,6 +14,7 @@ import { generateToken } from "#/utils/helperToken";
 import {
   accountSchema,
   passResetSchema,
+  reVerifyEmailBody,
   signInSchema,
   verifyEmailBody,
 } from "#/utils/validationSchema";
@@ -53,7 +54,7 @@ authRouter.post(
     if (existing) {
       return res.status(400).json({ message: "Account Email already exists" });
     }
-    
+
     const _user = new users({ email, password, name });
     const created_user = await _user.save();
 
@@ -97,6 +98,10 @@ authRouter.post(
       return res.status(403).json({ error: "User not found" });
     }
 
+    if (user.verified) {
+      return res.status(422).json({ error: "User account already verified." });
+    }
+
     const matched = await user.compareToken(token);
 
     if (!matched) {
@@ -113,7 +118,7 @@ authRouter.post(
   }
 );
 
-authRouter.post("/re-verify", validate(verifyEmailBody), async (req, res) => {
+authRouter.post("/re-verify", validate(reVerifyEmailBody), async (req, res) => {
   const { userId } = req.body;
   await emailVerificationToken.findOneAndDelete({ owner: userId });
   const token = generateToken(6);
@@ -135,10 +140,6 @@ authRouter.post("/forgot-password", async (req, res) => {
 
   if (!user) {
     return res.status(404).json({ error: "User account not found" });
-  }
-
-  if (user.verified) {
-    return res.status(422).json({ error: "User account already verified." });
   }
 
   // generate link
