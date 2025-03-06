@@ -123,7 +123,9 @@ authRouter.post("/re-verify", validate(reVerifyEmailBody), async (req, res) => {
   await emailVerificationToken.findOneAndDelete({ owner: userId });
   const token = generateToken(6);
   await emailVerificationToken.create({ owner: userId, token });
+  
   const user = await users.findById(userId);
+  
   transport.sendMail({
     to: user?.email,
     from: "dkmawasha@gmail.com",

@@ -13,6 +13,8 @@ import { white } from "@styles/Colors";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import client from "src/api/client";
 import { AuthPropTypes } from "src/@types/AuthPropTypes";
+import { updateLoggedIn, updateProfile } from "src/store/auth";
+import { useDispatch } from "react-redux";
 
 interface Auth {
   name: string;
@@ -27,6 +29,7 @@ const initialVals: Auth = {
 };
 
 const SignUp = () => {
+  const dispatch = useDispatch();
   const [toggle, setToggle] =
     useState<Boolean>(false); /* for toggling the password visibility. */
 
@@ -44,6 +47,8 @@ const SignUp = () => {
       });
 
       if (data) {
+        dispatch(updateProfile(data.user));
+        dispatch(updateLoggedIn(false));
         navigation.navigate("verification", {
           userInfo: data.user,
           message: data.message,

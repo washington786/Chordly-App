@@ -8,6 +8,8 @@ import {
   SignUp,
 } from "@utils/Exports";
 import { AuthPropTypes } from "src/@types/AuthPropTypes";
+// import { useSelector } from "react-redux";
+// import { authState } from "src/store/auth";
 
 const Stack = createNativeStackNavigator<AuthPropTypes>();
 

@@ -10,4 +10,9 @@ export type AuthPropTypes = {
     };
     message: string;
   };
+  app: undefined;
+  auth: undefined;
+  upload: undefined;
+  home: undefined;
+  profile: undefined;
 };

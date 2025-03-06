@@ -14,6 +14,10 @@ import { signInValidationSchema } from "@utils/SignUpValidationSchema";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { AuthPropTypes } from "src/@types/AuthPropTypes";
 import client from "src/api/client";
+import { useDispatch } from "react-redux";
+import { updateLoggedIn, updateProfile } from "src/store/auth";
+import { saveToStorage } from "@utils/AsyncStorage";
+import { Keys } from "@utils/enums";
 
 interface SignInDoc {
   email: string;
@@ -25,6 +29,7 @@ const initialValues = {
   password: "",
 };
 const SignIn = () => {
+  const dispatch = useDispatch();
   const [toggle, setToggle] = useState<Boolean>(false);
   const navigation = useNavigation<NavigationProp<AuthPropTypes>>();
 
@@ -44,7 +49,10 @@ const SignIn = () => {
 
       if (res.status === 200) {
         const { data } = res;
-        console.log(data);
+        await saveToStorage(Keys.AUTH_TOKEN, data.token);
+        dispatch(updateProfile(data.user));
+        dispatch(updateLoggedIn(true));
+        navigation.navigate("home");
       }
     } catch (error) {
       console.log("====================================");
