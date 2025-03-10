@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import AuthNavigator from "./AuthNavigator";
 import BottomNavigation from "./BottomNavigation";
 import { useDispatch, useSelector } from "react-redux";
@@ -16,7 +15,6 @@ import MainNavigation from "./MainNavigation";
 import { ActivityIndicator } from "react-native-paper";
 import { StyleSheet, View } from "react-native";
 
-const AppStack = createNativeStackNavigator();
 
 const AppNavigation = () => {
   const dispatch = useDispatch();
