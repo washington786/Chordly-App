@@ -17,7 +17,7 @@ const UploadAudio = ({
         type: "audio/*", // Only allow audio files
       });
 
-      console.log("Document Picker Result:", result); // Debugging output
+      // console.log("Document Picker Result:", result); // Debugging output
 
       if (!result.canceled && result.assets?.length > 0) {
         setAudioFile(result.assets[0]); // Store only the first file object

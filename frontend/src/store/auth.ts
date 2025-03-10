@@ -42,8 +42,8 @@ const authSlice = createSlice({
 export const { updateLoggedIn, updateProfile, updateBusy } = authSlice.actions;
 
 export const authState = createSelector(
-  (state: ROOT_STATE) => state,
-  (state) => state
+  (state: ROOT_STATE) => state.auth,
+  (authState) => authState
 );
 
 export default authSlice.reducer;

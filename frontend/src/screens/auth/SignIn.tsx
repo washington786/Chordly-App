@@ -18,6 +18,8 @@ import { useDispatch } from "react-redux";
 import { updateLoggedIn, updateProfile } from "src/store/auth";
 import { saveToStorage } from "@utils/AsyncStorage";
 import { Keys } from "@utils/enums";
+import Toast from "react-native-toast-message";
+import { isAxiosError } from "axios";
 
 interface SignInDoc {
   email: string;
@@ -40,6 +42,27 @@ const SignIn = () => {
     navigation.navigate("resetPassword");
   }
 
+  const showToast = ({
+    type,
+    message,
+    title,
+  }: {
+    type: "success" | "error";
+    message: string;
+    title: string;
+  }) => {
+    Toast.show({
+      type: type,
+      text1: title,
+      text2: message,
+      autoHide: true,
+      swipeable: true,
+      visibilityTime: 5000,
+      position: "top",
+      topOffset: 0,
+    });
+  };
+
   async function handleSubmit(
     values: SignInDoc,
     actions: FormikHelpers<SignInDoc>
@@ -55,14 +78,20 @@ const SignIn = () => {
         navigation.navigate("home");
       }
     } catch (error) {
-      console.log("====================================");
-      console.log("Login Error:", error);
-      console.log("====================================");
+      if (isAxiosError(error)) {
+        showToast({
+          type: "error",
+          message: error?.response?.data?.message,
+          title: "Error",
+        });
+      }
+      showToast({ type: "error", message: error as string, title: "Error" });
     }
   }
   return (
     <Gradient>
       <KeyboardAvoidanceView>
+        <Toast />
         <Header
           title="Welcome Back!"
           description="Enter your credentials to login."

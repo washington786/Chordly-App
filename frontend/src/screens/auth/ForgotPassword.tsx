@@ -12,6 +12,8 @@ import GlobalStyles from "@styles/GlobalStyles";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { AuthPropTypes } from "src/@types/AuthPropTypes";
 import client from "src/api/client";
+import Toast from "react-native-toast-message";
+import { isAxiosError } from "axios";
 
 interface Auth {
   email: string;
@@ -27,6 +29,27 @@ const ForgotPassword = () => {
     navigation.goBack();
   }
 
+  const showToast = ({
+    type,
+    message,
+    title,
+  }: {
+    type: "success" | "error";
+    message: string;
+    title: string;
+  }) => {
+    Toast.show({
+      type: type,
+      text1: title,
+      text2: message,
+      autoHide: true,
+      swipeable: true,
+      visibilityTime: 5000,
+      position: "top",
+      topOffset: 0,
+    });
+  };
+
   async function handleSubmit(values: Auth, action: FormikHelpers<Auth>) {
     try {
       const res = await client.post("/auth/forgot-password", {
@@ -37,12 +60,21 @@ const ForgotPassword = () => {
       }
     } catch (error) {
       console.log("forgot password: ", error);
+      if (isAxiosError(error)) {
+        showToast({
+          type: "error",
+          message: error?.response?.data?.message,
+          title: "Error",
+        });
+      }
+      showToast({ type: "error", message: error as string, title: "Error" });
     }
   }
 
   return (
     <Gradient>
       <KeyboardAvoidanceView>
+        <Toast />
         <Header
           title="Forgot Password"
           description="Oops, did you forget your password? Don't worry, we'll help you get back in."

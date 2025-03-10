@@ -17,6 +17,8 @@ import {
 } from "@react-navigation/native";
 import { AuthPropTypes } from "src/@types/AuthPropTypes";
 import client from "src/api/client";
+import Toast from "react-native-toast-message";
+import { isAxiosError } from "axios";
 
 const initialValues = {
   otp: "",
@@ -72,6 +74,27 @@ const OneTimePinVerification = () => {
     }
   }
 
+  const showToast = ({
+    type,
+    message,
+    title,
+  }: {
+    type: "success" | "error";
+    message: string;
+    title: string;
+  }) => {
+    Toast.show({
+      type: type,
+      text1: title,
+      text2: message,
+      autoHide: true,
+      swipeable: true,
+      visibilityTime: 5000,
+      position: "top",
+      topOffset: 0,
+    });
+  };
+
   async function handleReverify() {
     setCanResend(false);
     setTimer(60);
@@ -81,12 +104,21 @@ const OneTimePinVerification = () => {
       });
     } catch (error) {
       console.log("re-verify error: ", error);
+      if (isAxiosError(error)) {
+        showToast({
+          type: "error",
+          message: error?.response?.data?.message,
+          title: "Error",
+        });
+      }
+      showToast({ type: "error", message: error as string, title: "Error" });
     }
   }
 
   return (
     <Gradient>
       <KeyboardAvoidanceView>
+        <Toast />
         <Header
           title="Verify Email"
           description="Please check your emails for OTP."

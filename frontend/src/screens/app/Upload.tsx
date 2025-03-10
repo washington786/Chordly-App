@@ -8,7 +8,7 @@ import { cod_gray, GreenMain } from "@styles/Colors";
 import KeyboardAvoidanceView from "@components/KeyboardAvoidanceView";
 import { Button } from "react-native-paper";
 import MultiSelect from "react-native-multiple-select";
-import { categoryTypes, items } from "@utils/CategoryData";
+import { items } from "@utils/CategoryData";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import * as yup from "yup";
 import client from "src/api/client";
@@ -16,23 +16,10 @@ import { fetchFromStorage } from "@utils/AsyncStorage";
 import { Keys } from "@utils/enums";
 import * as ImagePicker from "expo-image-picker";
 
-const validationSchema = yup.object().shape({
-  title: yup.string().trim().required("title is required!"),
-  about: yup.string().trim().required("about field is required!"),
-  category: yup.string().oneOf(categoryTypes, "category is required!"),
-  file: yup.object().shape({
-    uri: yup.string().required("audio file is required!"),
-    mimeType: yup.string().required("audio file is required!"),
-    name: yup.string().required("audio file is required!"),
-    size: yup.string().required("audio file is required!"),
-  }),
-  poster: yup.object().shape({
-    uri: yup.string(),
-    type: yup.string(),
-    name: yup.string(),
-    size: yup.string(),
-  }),
-});
+import { validationSchema } from "@utils/uploadValidationSchema";
+
+import * as Progress from "react-native-progress";
+import Toast from "react-native-toast-message";
 
 interface FormFields {
   title: string;
@@ -46,31 +33,74 @@ const defaultForm: FormFields = {
   title: "",
   about: "",
   category: "",
+  file: undefined,
+  poster: undefined,
 };
 
 const Upload = () => {
+  // const;
   const [audioFile, setAudioFile] =
     useState<DocumentPicker.DocumentPickerResult | null>(null);
 
   const [image, setImage] =
     useState<ImagePicker.ImagePickerSuccessResult | null>(null);
 
-  const [category, setCategory] = useState<string>();
+  const [category, setCategory] = useState<string[]>([]);
+
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [busy, setBusy] = useState<boolean>(false);
 
   const multiSelect = useRef<MultiSelect>(null);
 
   const [audioInfo, setAudioInfo] = useState({ ...defaultForm });
 
-  function onSelect(category: string) {
+  function onSelect(category: string[]) {
     setCategory(category);
   }
 
+  const showToast = ({
+    type,
+    message,
+    title,
+  }: {
+    type: "success" | "error";
+    message: string;
+    title: string;
+  }) => {
+    Toast.show({
+      type: type,
+      text1: title,
+      text2: message,
+      autoHide: true,
+      swipeable: true,
+      visibilityTime: 5000,
+      position: "top",
+      topOffset: 0,
+    });
+  };
+
+  function resetForm() {
+    setAudioInfo({
+      about: "",
+      title: "",
+      file: undefined,
+      poster: undefined,
+      category: "",
+    });
+    setCategory([]);
+    setImage(null);
+    setAudioFile(null);
+    setUploadProgress(0);
+    setBusy(false);
+  }
+
   async function handleSubmit() {
+    setBusy(true);
     let filteredCat = items
       .filter((item) => item.id === category?.at(0))
       .map((item) => item.name)
       .join(",");
-  
+
     // Ensure values are correctly structured for validation
     const updatedAudioInfo = {
       ...audioInfo,
@@ -78,16 +108,42 @@ const Upload = () => {
       file: audioFile && !audioFile.canceled ? audioFile : undefined,
       poster: image && !image.canceled ? image : undefined,
     };
-  
+
     try {
       const res = await validationSchema.validate(updatedAudioInfo);
       const { about, file, poster, title, category: selectedCategory } = res;
-  
+
+      if (!file) {
+        showToast({
+          type: "error",
+          message: "Please select an audio file",
+          title: "Error",
+        });
+      } else if (!selectedCategory) {
+        showToast({
+          type: "error",
+          message: "Please select a category",
+          title: "Error",
+        });
+      } else if (!title) {
+        showToast({
+          type: "error",
+          message: "Please enter a title",
+          title: "Error",
+        });
+      } else if (!about) {
+        showToast({
+          type: "error",
+          message: "Please enter a description",
+          title: "Error",
+        });
+      }
+
       const formData = new FormData();
       formData.append("title", title);
       formData.append("about", about);
-      formData.append("category", selectedCategory);
-  
+      formData.append("category", selectedCategory as string);
+
       if (file) {
         formData.append("file", {
           name: file.name,
@@ -95,37 +151,70 @@ const Upload = () => {
           uri: file.uri,
         });
       }
-  
+
       if (poster && poster.uri) {
         formData.append("poster", {
           name: poster.name,
-          type: poster.mimeType,
+          type: poster.type,
           uri: poster.uri,
         });
       }
-  
+
       const token = await fetchFromStorage(Keys.AUTH_TOKEN);
       const client_res = await client.post("/audio/create", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: "Bearer " + token,
         },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const uploaded = Math.floor(
+              (progressEvent.loaded / progressEvent.total) * 100
+            );
+
+            console.log(`Upload Progress: ${uploaded}%`); // Debugging
+
+            setUploadProgress(uploaded);
+
+            if (uploaded >= 100) {
+              setTimeout(() => {
+                setAudioInfo({
+                  ...defaultForm,
+                  file: undefined,
+                  poster: undefined,
+                  category: "",
+                });
+                setBusy(false);
+                setUploadProgress(0);
+              }, 500); // Small delay to smooth progress bar reset
+            }
+          }
+        },
       });
-  
-      if (client_res.status === 200) {
-        console.log("created",client_res.data);
+
+      if (client_res.status === 201) {
+        resetForm();
+        // console.log("created", client_res.data);
+        showToast({
+          type: "success",
+          message: "Audio uploaded successfully",
+          title: "Success",
+        });
       } else {
+        resetForm();
         console.log(client_res.data.message);
       }
     } catch (error) {
       if (error instanceof yup.ValidationError) {
         console.log("Validation error: ", error.message);
+        showToast({ type: "error", message: error.message, title: "Error" });
       } else {
         console.log("Submission error: ", error);
+        showToast({ type: "error", message: error as string, title: "Error" });
       }
     }
+    setBusy(false);
   }
-  
 
   const navigation = useNavigation<NavigationProp<any>>();
 
@@ -139,9 +228,7 @@ const Upload = () => {
   }, [navigation]);
 
   return (
-    // <ScrollViewWrapper>
     <KeyboardAvoidanceView>
-      {/* <Text variant="labelLarge">Upload Audio</Text> */}
       <View style={{ flexDirection: "row", paddingHorizontal: 8 }}>
         <UploadFiles image={image} setImage={setImage} />
         <UploadAudio audioFile={audioFile} setAudioFile={setAudioFile} />
@@ -193,20 +280,33 @@ const Upload = () => {
           submitButtonText="Confirm"
           single={true}
         />
-        <View>{multiSelect.current?.getSelectedItemsExt(category)}</View>
+        <View>{multiSelect.current?.getSelectedItemsExt(category as any)}</View>
 
+        {/* <ProgressBarComponent progress={uploadProgress} visible={!!busy} /> */}
+        {!!busy && (
+          <View style={{ marginVertical: 8 }}>
+            <Progress.Bar
+              progress={uploadProgress / 100}
+              width={380}
+              color={GreenMain[400]}
+              animated
+            />
+          </View>
+        )}
         <Button
           mode="contained"
           uppercase
           buttonColor={GreenMain[500]}
           style={styles.btn}
           onPress={handleSubmit}
+          disabled={!!busy}
+          loading={!!busy}
         >
-          submit
+          {busy ? "Uploading..." : "Submit"}
         </Button>
+        <Toast />
       </View>
     </KeyboardAvoidanceView>
-    // </ScrollViewWrapper>
   );
 };
 

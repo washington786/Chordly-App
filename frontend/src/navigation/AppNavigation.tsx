@@ -15,10 +15,9 @@ import MainNavigation from "./MainNavigation";
 import { ActivityIndicator } from "react-native-paper";
 import { StyleSheet, View } from "react-native";
 
-
 const AppNavigation = () => {
   const dispatch = useDispatch();
-  const { authSlice } = useSelector(authState);
+  const { busy, loggedIn } = useSelector(authState);
   useEffect(() => {
     async function fetchToken() {
       dispatch(updateBusy(true));
@@ -46,7 +45,7 @@ const AppNavigation = () => {
 
   return (
     <MainNavigation>
-      {authSlice.busy ? (
+      {busy ? (
         <View
           style={{
             ...StyleSheet.absoluteFillObject,
@@ -59,7 +58,7 @@ const AppNavigation = () => {
           <ActivityIndicator />
         </View>
       ) : null}
-      {authSlice.loggedIn ? <BottomNavigation /> : <AuthNavigator />}
+      {loggedIn ? <BottomNavigation /> : <AuthNavigator />}
 
       {/* <AppStack.Navigator
         screenOptions={{ headerShown: false }}

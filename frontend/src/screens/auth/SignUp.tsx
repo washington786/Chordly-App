@@ -15,6 +15,8 @@ import client from "src/api/client";
 import { AuthPropTypes } from "src/@types/AuthPropTypes";
 import { updateLoggedIn, updateProfile } from "src/store/auth";
 import { useDispatch } from "react-redux";
+import Toast from "react-native-toast-message";
+import { isAxiosError } from "axios";
 
 interface Auth {
   name: string;
@@ -39,6 +41,27 @@ const SignUp = () => {
     navigation.navigate("signIn");
   }
 
+  const showToast = ({
+    type,
+    message,
+    title,
+  }: {
+    type: "success" | "error";
+    message: string;
+    title: string;
+  }) => {
+    Toast.show({
+      type: type,
+      text1: title,
+      text2: message,
+      autoHide: true,
+      swipeable: true,
+      visibilityTime: 5000,
+      position: "top",
+      topOffset: 0,
+    });
+  };
+
   async function handleSubmit(values: Auth, actions: FormikHelpers<Auth>) {
     try {
       // 192.168.0.221
@@ -56,12 +79,21 @@ const SignUp = () => {
       }
     } catch (error) {
       console.log("sign up error: ", error);
+      if (isAxiosError(error)) {
+        showToast({
+          type: "error",
+          message: error?.response?.data?.message,
+          title: "Error",
+        });
+      }
+      showToast({ type: "error", message: error as string, title: "Error" });
     }
   }
 
   return (
     <Gradient>
       <KeyboardAvoidanceView>
+        <Toast />
         <Header
           title="Welcome!"
           description="Let's get started by creating an account."
