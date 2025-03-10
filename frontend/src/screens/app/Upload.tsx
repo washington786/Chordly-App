@@ -65,63 +65,6 @@ const Upload = () => {
     setCategory(category);
   }
 
-  // async function handleSubmit() {
-  //   let filteredCat = items
-  //     .filter((item) => item.id === category?.at(0))
-  //     .map((item) => item.name)
-  //     .join(",");
-
-  //   try {
-  //     setAudioInfo({
-  //       ...audioInfo,
-  //       category: filteredCat,
-  //       file: audioFile && !audioFile.canceled ? audioFile : undefined,
-  //       poster: image && !image.canceled ? image : undefined,
-  //     });
-
-  //     const res = await validationSchema.validate(audioInfo);
-  //     const { about, file, poster, title, category: selectedCategory } = res;
-
-  //     const formData = new FormData();
-  //     formData.append("title", title);
-  //     formData.append("about", about);
-  //     formData.append("category", selectedCategory);
-  //     formData.append("file", {
-  //       name: file?.name,
-  //       type: file?.mimeType,
-  //       uri: file?.uri,
-  //       // size: res.file?.size,
-  //     });
-
-  //     if (poster.uri) {
-  //       formData.append("poster", {
-  //         name: poster.name,
-  //         type: poster.type,
-  //         uri: poster.uri,
-  //       });
-  //     }
-
-  //     const token = await fetchFromStorage(Keys.AUTH_TOKEN);
-      
-  //     const client_res = await client.post("/audio/create", res, {
-  //       headers: {
-  //         "Content-Type": "multipart/form-data",
-  //         Authorization: "Bearer " + token,
-  //       },
-  //     });
-  //     if (client_res.status === 200) {
-  //       console.log(client_res.data);
-  //     } else {
-  //       console.log(client_res.data.message);
-  //     }
-  //   } catch (error) {
-  //     if (error instanceof yup.ValidationError) {
-  //       console.log("error: ", error.message);
-  //     } else {
-  //       console.log("error: ", error);
-  //     }
-  //   }
-  // }
   async function handleSubmit() {
     let filteredCat = items
       .filter((item) => item.id === category?.at(0))
@@ -170,7 +113,7 @@ const Upload = () => {
       });
   
       if (client_res.status === 200) {
-        console.log(client_res.data);
+        console.log("created",client_res.data);
       } else {
         console.log(client_res.data.message);
       }
