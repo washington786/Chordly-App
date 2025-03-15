@@ -54,6 +54,15 @@ const GlobalStyles = StyleSheet.create({
     fontWeight: "400",
     color: white[50],
   },
+  scroller: {
+    backgroundColor: white[100],
+  },
+  mainTitle: {
+    paddingHorizontal: 5,
+  },
+  modalWrapper:{
+    flex:1
+  }
 });
 
 export default GlobalStyles;

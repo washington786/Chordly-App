@@ -213,7 +213,7 @@ profileRouter.get("/recommended", isAuth, async (req, res) => {
       };
     }
 
-    return res.status(200).json({ audios: history });
+    return res.status(200).json({ audios: histories });
   }
 
   const audios = await Audio.aggregate([
