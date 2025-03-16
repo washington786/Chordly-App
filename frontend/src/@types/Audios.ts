@@ -19,3 +19,14 @@ export interface Playlist {
   itemsCount: number;
   visibility: "public" | "private" | "auto";
 }
+
+export interface Uploads {
+  id: string;
+  title: string;
+  about: string;
+  category: string;
+  file: string;
+  poster: string;
+  date: string;
+  owner: string;
+}

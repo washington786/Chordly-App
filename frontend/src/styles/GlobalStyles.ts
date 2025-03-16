@@ -60,9 +60,21 @@ const GlobalStyles = StyleSheet.create({
   mainTitle: {
     paddingHorizontal: 5,
   },
-  modalWrapper:{
-    flex:1
-  }
+  modalWrapper: {
+    flex: 1,
+  },
+  scroll: {
+    paddingBottom: 15,
+    marginHorizontal: 8,
+  },
+  toasterContainer: {
+    position: "absolute",
+    top: 20,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
 });
 
 export default GlobalStyles;

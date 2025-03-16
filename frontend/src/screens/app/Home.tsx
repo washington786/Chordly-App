@@ -297,7 +297,7 @@ const Home = () => {
 interface playlistProps {
   isPlaylistModalShow: boolean;
   handleModalPlaylistShow(): void;
-  playlist: any;
+  playlist: Playlist[]; // Ensure playlist is typed as an array
   isAdding: boolean;
   value: "public" | "private";
   setVisibility(value: "public" | "private"): void;
@@ -307,10 +307,11 @@ interface playlistProps {
   handleSubmit(): void;
   onPlayListPress(playlist: Playlist): void;
 }
+
 function PlaylistModal({
   isPlaylistModalShow,
   handleModalPlaylistShow,
-  playlist,
+  playlist = [], // Set a default value as an empty array
   isAdding,
   setTitle,
   setVisibility,
@@ -331,7 +332,7 @@ function PlaylistModal({
           icon={"playlist-plus"}
           uppercase
           mode="contained-tonal"
-          onPress={() => setAdding((prev: any) => !prev)}
+          onPress={() => setAdding((prev:any) => !prev)}
         >
           {isAdding ? "close form" : "add play-list"}
         </Button>
@@ -345,7 +346,9 @@ function PlaylistModal({
           />
         )}
 
-        {!isAdding && (
+        {!isAdding && playlist.length === 0 ? (
+          <Text>No playlists available</Text>
+        ) : (
           <ScrollView>
             {playlist.map((audio: Playlist) => {
               return (
@@ -380,7 +383,6 @@ function PlaylistModal({
     </ModalComponent>
   );
 }
-
 interface formProps {
   value: "public" | "private";
   onChange(value: string): void;

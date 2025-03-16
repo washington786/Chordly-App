@@ -70,62 +70,59 @@ favorites.post("/", isAuthenticated, isVerified, async (req, res) => {
 });
 
 favorites.get("/", isAuthenticated, isVerified, async (req, res) => {
-  // const ownerId = req.user?.id;
   const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
 
-  const _favorites = await Favorites.aggregate([
-    { $match: { owner: req.user?.id } },
-    {
-      $project: {
-        audioIds: {
-          $slice: [
-            "$$items",
-            parseInt(pageNo) * parseInt(limit),
-            parseInt(limit),
-          ],
+  try {
+    const _favorites = await Favorites.aggregate([
+      { $match: { owner: req.user?.id } },
+      {
+        $project: {
+          audioIds: {
+            $slice: [
+              "$items", // Corrected from $$items to "$items"
+              parseInt(pageNo) * parseInt(limit),
+              parseInt(limit),
+            ],
+          },
         },
       },
-    },
-    {
-      $unwind: "$audioIds",
-    },
-    {
-      $lookup: {
-        from: "audios",
-        localField: "audioIds",
-        foreignField: "_id",
-        as: "audioInfo",
+      { $unwind: { path: "$audioIds", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "audios",
+          localField: "audioIds",
+          foreignField: "_id",
+          as: "audioInfo",
+        },
       },
-    },
-    {
-      $unwind: "$audioInfo",
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "audioInfo.owner",
-        foreignField: "_id",
-        as: "ownerInfo",
+      { $unwind: { path: "$audioInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "audioInfo.owner",
+          foreignField: "_id",
+          as: "ownerInfo",
+        },
       },
-    },
-    {
-      $unwind: "$ownerInfo",
-    },
-    {
-      $project:{
-        _id:0,
-        id:"$audioInfo._id",
-        title:"$audioInfo.title",
-        about:"$audioInfo.about",
-        // category:"$audioInfo.category",
-        file:"$audioInfo.file.url",
-        poster:"$audioInfo.poster.url",
-        owner:{name:"$ownerInfo.name",id:"$ownerInfo._id"},
-      }
-    }
-  ]);
+      { $unwind: { path: "$ownerInfo", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 0,
+          id: "$audioInfo._id",
+          title: "$audioInfo.title",
+          about: "$audioInfo.about",
+          file: "$audioInfo.file.url",
+          poster: "$audioInfo.poster.url",
+          owner: { name: "$ownerInfo.name", id: "$ownerInfo._id" },
+        },
+      },
+    ]);
 
-  res.status(200).json({ audios:_favorites });
+    res.status(200).json({ audios: _favorites });
+  } catch (error) {
+    console.error("Error fetching favorites:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 });
 
 favorites.get("/is-fav", isAuthenticated, async (req, res) => {

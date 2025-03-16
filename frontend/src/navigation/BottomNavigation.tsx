@@ -4,6 +4,7 @@ import { Home, Profile, Upload } from "@utils/Exports";
 import { GreenMain, white } from "@styles/Colors";
 
 import AntIcons from "react-native-vector-icons/AntDesign";
+import ProfileNavigation from "./ProfileNavigation";
 
 const BottomStack = createBottomTabNavigator();
 const BottomNavigation = () => {
@@ -49,8 +50,8 @@ const BottomNavigation = () => {
         }}
       />
       <BottomStack.Screen
-        name="profile"
-        component={Profile}
+        name="profileNavigation"
+        component={ProfileNavigation}
         options={{
           tabBarIcon: (props) => {
             return (

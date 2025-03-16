@@ -16,3 +16,8 @@ export type AuthPropTypes = {
   home: undefined;
   profile: undefined;
 };
+
+export type profilePropTypes = {
+  profile: undefined;
+  settings: undefined;
+};

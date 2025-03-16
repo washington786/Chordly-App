@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { fetchFromStorage } from "@utils/AsyncStorage";
 import { Keys } from "@utils/enums";
 import { isAxiosError } from "axios";
@@ -71,4 +72,11 @@ export async function fetchPlaylistByProfile(queryClient: any, showToast: any) {
     showToast({ type: "error", message: error as string, title: "Error" });
     return []; // ✅ Return empty array to prevent `undefined`
   }
+}
+
+export function useFetchPlaylist(queryClient: any, showToast: any) {
+  return useQuery({
+    queryKey: ["playlist"],
+    queryFn: () => fetchPlaylistByProfile(queryClient, showToast),
+  });
 }
