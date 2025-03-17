@@ -17,7 +17,7 @@ const Profile = () => {
   const { profile } = useSelector(authState);
   return (
     <View style={styles.container}>
-      <ProfileContainer profile={profile as UserProfile} />
+      <ProfileContainer profile={profile as unknown as UserProfile} />
       <Tab.Navigator
         initialRouteName="uploads"
         screenOptions={{

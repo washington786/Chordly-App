@@ -8,7 +8,7 @@ import Icons from "react-native-vector-icons/Feather";
 
 interface props {
   playlist: Playlist;
-  onPress: () => void;
+  onPress?: () => void;
 }
 const ItemComponent: FC<props> = ({ playlist, onPress }) => {
   return (

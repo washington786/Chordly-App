@@ -20,6 +20,7 @@
     "@reduxjs/toolkit": "^2.6.0",
     "@tanstack/react-query": "^5.67.2",
     "axios": "^1.8.1",
+    "deep-equal": "^2.2.3",
     "expo": "~52.0.37",
     "expo-document-picker": "~13.0.3",
     "expo-image-picker": "~16.0.6",
@@ -33,6 +34,7 @@
     "react-native-multiple-select": "^0.5.12",
     "react-native-otp-entry": "^1.8.3",
     "react-native-otp-textinput": "^1.1.6",
+    "react-native-pager-view": "6.5.1",
     "react-native-paper": "^5.13.1",
     "react-native-progress": "^5.0.1",
     "react-native-reanimated": "~3.16.1",
@@ -41,11 +43,11 @@
     "react-native-toast-message": "^2.2.1",
     "react-native-vector-icons": "^10.2.0",
     "react-redux": "^9.2.0",
-    "yup": "^1.6.1",
-    "react-native-pager-view": "6.5.1"
+    "yup": "^1.6.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@types/deep-equal": "^1.0.4",
     "@types/react": "~18.3.12",
     "@types/react-native": "^0.72.8",
     "@types/react-native-vector-icons": "^6.4.18",

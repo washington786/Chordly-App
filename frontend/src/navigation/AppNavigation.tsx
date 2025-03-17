@@ -34,7 +34,7 @@ const AppNavigation = () => {
         dispatch(updateLoggedIn(true));
         dispatch(updateProfile(data.profile));
         dispatch(updateBusy(false));
-        console.log(data);
+        // console.log(data);
       } catch (error) {
         console.log("error: ", error);
         dispatch(updateBusy(false));

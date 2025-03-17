@@ -30,9 +30,6 @@ const OneTimePinVerification = () => {
   const { params } = useRoute<Props>();
   const { userInfo, message } = params;
 
-  console.log("userInfo: ", userInfo);
-  console.log("message: ", message);
-
   const otp = useRef<OtpInputRef>(null);
 
   const navigation = useNavigation<NavigationProp<AuthPropTypes>>();

@@ -77,7 +77,7 @@ const Home = () => {
     staleTime: 0, // ✅ Forces fresh data on every fetch
   });
 
-  console.log(playlist);
+  // console.log(playlist);
 
   useEffect(() => {
     if (isError) {

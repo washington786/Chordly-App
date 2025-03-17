@@ -52,7 +52,7 @@ export async function fetchPlaylistByProfile(queryClient: any, showToast: any) {
       },
     });
 
-    console.log("API Response:", data); // ✅ Debugging: See if data exists
+    // console.log("API Response:", data); // ✅ Debugging: See if data exists
 
     if (data) {
       queryClient.setQueryData(["playlist"], data);
