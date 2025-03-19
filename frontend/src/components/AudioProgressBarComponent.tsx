@@ -4,47 +4,6 @@ import Slider from "@react-native-community/slider";
 import useAudio from "@hooks/audioHook";
 import { Button } from "react-native-paper";
 
-// interface prop {
-//   position: number;
-//   duration: number;
-//   setPosition(): void;
-//   handleSeek(): void;
-//   isPlaying: boolean;
-//   playPauseAudio: () => void;
-//   url: string;
-// }
-// const AudioProgressBarComponent: FC<prop> = ({
-//   duration,
-//   position,
-//   setPosition,
-//   handleSeek,
-//   isPlaying,
-//   playPauseAudio,
-//   url,
-// }) => {
-//   const { formatTime } = useAudio(url);
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.time}>{formatTime(position)}</Text>
-//       <Slider
-//         style={styles.slider}
-//         minimumValue={0}
-//         maximumValue={duration}
-//         value={position}
-//         onValueChange={setPosition}
-//         onSlidingComplete={handleSeek}
-//         minimumTrackTintColor="#3A5B3E"
-//         maximumTrackTintColor="#AACBAE"
-//         thumbTintColor="#2A3D2C"
-//       />
-//       <Text style={styles.time}>{formatTime(duration)}</Text>
-//       <Text onPress={playPauseAudio} style={styles.playButton}>
-//         {isPlaying ? "Pause" : "Play"}
-//       </Text>
-//     </View>
-//   );
-// };
-
 interface AudioProgressBarComponentProps {
   duration: number;
   handleSeek: (value: number) => void; // Make sure this function signature expects a value argument
@@ -53,6 +12,7 @@ interface AudioProgressBarComponentProps {
   isPlaying: boolean;
   playPauseAudio: () => void;
   url?: string;
+  formatTime: any;
 }
 
 const AudioProgressBarComponent: FC<AudioProgressBarComponentProps> = ({
@@ -62,8 +22,8 @@ const AudioProgressBarComponent: FC<AudioProgressBarComponentProps> = ({
   setPosition,
   isPlaying,
   playPauseAudio,
+  formatTime,
 }) => {
-  const { formatTime } = useAudio();
   return (
     <View style={styles.container}>
       <Text style={styles.time}>{formatTime(position)}</Text>
@@ -76,7 +36,9 @@ const AudioProgressBarComponent: FC<AudioProgressBarComponentProps> = ({
         onSlidingComplete={handleSeek}
       />
       <Text style={styles.time}>{formatTime(duration)}</Text>
-      <Button onPress={playPauseAudio}>{isPlaying ? "Pause" : "Play"}</Button>
+      <Text onPress={playPauseAudio} style={styles.playButton}>
+        {isPlaying ? "Pause" : "Play"}
+      </Text>
     </View>
   );
 };

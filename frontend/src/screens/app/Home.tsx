@@ -1,9 +1,4 @@
-import {
-  Dimensions,
-  Image,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Dimensions, Image, StyleSheet, View } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Toast from "react-native-toast-message";
@@ -12,11 +7,7 @@ import {
   fetchPlaylistByProfile,
   fetchRecommended,
 } from "@hooks/query";
-import {
-  ActivityIndicator,
-  IconButton,
-  Text,
-} from "react-native-paper";
+import { ActivityIndicator, IconButton, Text } from "react-native-paper";
 import { showToast } from "@utils/Toast";
 import { white } from "@styles/Colors";
 import LatestUploads from "@components/app/home/LatestUploads";
@@ -33,6 +24,8 @@ import ToastContainer from "@components/app/ToastContainer";
 import { LinearGradient } from "expo-linear-gradient";
 import Slider from "@react-native-community/slider";
 import PlaylistModal from "@components/app/PlaylistModal";
+import AudioProgressBarComponent from "@components/AudioProgressBarComponent";
+import useAudioPlayer from "@hooks/useAudioPlayer";
 
 const Home = () => {
   const height = Dimensions.get("screen").height;
@@ -118,14 +111,17 @@ const Home = () => {
     if (item) {
       handleModalShow();
     }
-    // else {
-    //   showToast({
-    //     type: "error",
-    //     message: "Invalid audio source",
-    //     title: "Error",
-    //   });
-    // }
   };
+  const {
+    duration,
+    formatTime,
+    handleSeek,
+    isPlaying,
+    playPauseAudio,
+    position,
+    setPosition,
+  } = useAudioPlayer(audio?.audio as string);
+
   console.log(audioSound);
   console.log(data);
 
@@ -315,14 +311,16 @@ const Home = () => {
                 {audioSound?.category}
               </Text>
 
-              {data.audios
-                .filter((aud: AudioData) => aud.id === audioSound?.id)
-                .map((aud: AudioData) => (
-                  <ProgressBarComponent
-                    key={aud.id}
-                    soundUrl={aud.audio as string}
-                  />
-                ))}
+              <AudioProgressBarComponent
+                duration={duration}
+                handleSeek={handleSeek}
+                isPlaying={isPlaying}
+                playPauseAudio={playPauseAudio}
+                position={position}
+                setPosition={setPosition}
+                formatTime={formatTime}
+              />
+
             </View>
             <View
               style={{
@@ -357,118 +355,7 @@ const Home = () => {
   );
 };
 
-interface ProgressBarComponentProps {
-  soundUrl: string;
-}
 
-const ProgressBarComponent = ({ soundUrl }: ProgressBarComponentProps) => {
-  const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const soundRef = useRef<Audio.Sound | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    const loadAndSetAudio = async () => {
-      await loadAudio();
-    };
-    loadAndSetAudio();
-    return () => {
-      cleanupAudio();
-    };
-  }, [soundUrl]);
-
-  const loadAudio = async () => {
-    try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
-      const { sound, status } = await Audio.Sound.createAsync(
-        { uri: soundUrl },
-        { shouldPlay: false }
-      );
-      soundRef.current = sound;
-      setDuration(status.isLoaded ? status.durationMillis / 1000 : 1);
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          setPosition(status.positionMillis / 1000);
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-            setPosition(0);
-          }
-        }
-      });
-    } catch (error) {
-      console.error("Error loading audio:", error);
-    }
-  };
-
-  const cleanupAudio = async () => {
-    if (soundRef.current) {
-      await soundRef.current.unloadAsync();
-      soundRef.current = null;
-    }
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-  };
-
-  const playPauseAudio = async () => {
-    if (!soundRef.current) {
-      console.error("Sound instance is missing");
-      return;
-    }
-    const status = await soundRef.current.getStatusAsync();
-    if (!status.isLoaded) {
-      console.error("Audio is not loaded yet");
-      return;
-    }
-    if (status.isPlaying) {
-      await soundRef.current.pauseAsync();
-      setIsPlaying(false);
-    } else {
-      await soundRef.current.playAsync();
-      setIsPlaying(true);
-    }
-  };
-
-  const handleSeek = async (value: number) => {
-    if (soundRef.current) {
-      await soundRef.current.setPositionAsync(value * 1000);
-      setPosition(value);
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  };
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.time}>{formatTime(position)}</Text>
-      <Slider
-        style={styles.slider}
-        minimumValue={0}
-        maximumValue={duration}
-        value={position}
-        onSlidingComplete={handleSeek}
-        minimumTrackTintColor="#3A5B3E"
-        maximumTrackTintColor="#AACBAE"
-        thumbTintColor="#2A3D2C"
-      />
-      <Text style={styles.time}>{formatTime(duration)}</Text>
-      <Text onPress={playPauseAudio} style={styles.playButton}>
-        {isPlaying ? "Pause" : "Play"}
-      </Text>
-    </View>
-  );
-};
 
 const styles = StyleSheet.create({
   loadWrapper: {
