@@ -12,6 +12,18 @@ export interface AudioData {
     id: string;
   };
 }
+export interface AudioPlay {
+  id?: string;
+  title: string;
+  about: string;
+  category: CategoryTypes;
+  file: string;
+  poster?: string | undefined;
+  owner: {
+    name: string;
+    id: string;
+  };
+}
 
 export interface Playlist {
   id: string;

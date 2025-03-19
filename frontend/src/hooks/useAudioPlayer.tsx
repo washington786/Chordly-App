@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { Audio } from "expo-av";
 
 const useAudioPlayer = (soundUrl: string) => {
-  const [position, setPosition] = useState(0); // Current playback position in seconds
-  const [duration, setDuration] = useState(1); // Total duration of the audio in seconds
-  const [isPlaying, setIsPlaying] = useState(false); // Whether the audio is currently playing
-  const soundRef = useRef<Audio.Sound | null>(null); // Reference to the audio instance
-  const intervalRef = useRef<NodeJS.Timeout | null>(null); // Reference to the progress tracking interval
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Load the audio when the soundUrl changes
   useEffect(() => {
@@ -25,6 +26,7 @@ const useAudioPlayer = (soundUrl: string) => {
 
   // Load the audio file
   const loadAudio = async () => {
+    setIsLoading(true);
     try {
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
@@ -53,8 +55,10 @@ const useAudioPlayer = (soundUrl: string) => {
         }
       });
     } catch (error) {
+      setIsLoading(false);
       console.error("Error loading audio:", error);
     }
+    setIsLoading(false);
   };
 
   // Clean up the audio instance
@@ -112,7 +116,8 @@ const useAudioPlayer = (soundUrl: string) => {
     playPauseAudio,
     handleSeek,
     formatTime,
-    setPosition
+    setPosition,
+    isLoading,
   };
 };
 
