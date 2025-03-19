@@ -1,4 +1,4 @@
-import { StyleSheet, View } from "react-native";
+import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import React, { FC } from "react";
 import { IconButton, Modal } from "react-native-paper";
 
@@ -7,12 +7,14 @@ interface mod {
   onClose?: () => void;
   visible: boolean;
   closeModal: () => void;
+  btnStyle?: StyleProp<ViewStyle>;
 }
 const ModalComponent: FC<mod> = ({
   children,
   visible,
   onClose,
   closeModal,
+  btnStyle,
 }) => {
   return (
     <Modal
@@ -22,7 +24,7 @@ const ModalComponent: FC<mod> = ({
     >
       <View style={styles.wrap}>
         <View style={styles.align}>
-          <IconButton icon={"close"} onPress={closeModal} />
+          <IconButton icon={"close"} onPress={closeModal} style={btnStyle} />
         </View>
         {children}
       </View>
@@ -39,5 +41,6 @@ const styles = StyleSheet.create({
   align: {
     alignItems: "flex-end",
     justifyContent: "flex-end",
+    zIndex: 100,
   },
 });

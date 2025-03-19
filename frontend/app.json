@@ -36,6 +36,19 @@
         {
           "iCloudContainerEnvironment": "Production"
         }
+      ],
+      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Chordly to access your microphone."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Chordly to access your microphone."
+        }
       ]
     ]
   }

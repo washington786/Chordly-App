@@ -1,7 +1,7 @@
 import { CategoryTypes } from "./../../../server/src/utils/audio_categories";
 
 export interface AudioData {
-  id: number;
+  id?: string;
   title: string;
   about: string;
   category: CategoryTypes;
