@@ -31,10 +31,10 @@ export const useFetchHistory = () => {
     ...useQuery({
       queryKey: ["history"],
       queryFn: fetchHistory,
-      staleTime: 1000 * 60 * 5,
+      staleTime: 1000 * 30,
       retry: 2,
-      refetchInterval: 1000 * 60 * 1, // Auto-refetch every 2 minutes
-      refetchOnWindowFocus: true, // Auto-refetch when user focuses window
+      refetchInterval: 5000, // Auto-refetch every 20 seconds
+      refetchOnWindowFocus: false, // Auto-refetch when user focuses window
       refetchOnReconnect: true, // Auto-refetch when internet reconnects
     }),
     refetchHistory,

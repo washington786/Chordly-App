@@ -110,6 +110,8 @@ function ItemDate({ date }: historyDate) {
 }
 
 function ItemAudios({ audios }: history) {
+  const { deleteHistoryItem } = useHistory();
+  const { refetchHistory } = useFetchHistory();
   return (
     <>
       <View style={styles.audio}>
@@ -117,7 +119,13 @@ function ItemAudios({ audios }: history) {
           return (
             <View key={audio.id} style={styles.innerWrap}>
               <Text variant="titleMedium">{audio.title}</Text>
-              <Icons name="close" onPress={() => {}} />
+              <Icons
+                name="close"
+                onPress={() => {
+                  deleteHistoryItem(audio.id);
+                  refetchHistory();
+                }}
+              />
             </View>
           );
         })}

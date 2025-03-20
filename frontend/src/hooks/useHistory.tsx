@@ -1,6 +1,7 @@
 import { showToast } from "@utils/Toast";
 import { isAxiosError } from "axios";
 import { getClient } from "src/api/client";
+import { useFetchHistory } from "./historyQuery";
 
 interface historyProps {
   audio: string;
@@ -42,5 +43,25 @@ export default function useHistory() {
       showToast({ message: errorMessage, title: "Error", type: "error" });
     }
   }
-  return { createHistory, deleteHistoryAudios };
+
+  async function deleteHistoryItem(id: string) {
+    try {
+      const client = await getClient();
+      await client.delete("/history/" + id);
+      showToast({
+        message: "History Items removed successfully",
+        title: "Success",
+        type: "success",
+      });
+    } catch (error) {
+      let errorMessage = "Sorry, something went wrong.";
+      if (isAxiosError(error)) {
+        errorMessage = error.response?.data.message || errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      showToast({ message: errorMessage, title: "Error", type: "error" });
+    }
+  }
+  return { createHistory, deleteHistoryAudios, deleteHistoryItem };
 }

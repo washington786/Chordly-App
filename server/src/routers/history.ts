@@ -131,55 +131,67 @@ historyRouter.delete("/", isAuthenticated, async (req, res) => {
     .json({ message: "History deleted successfully!", success: true });
 });
 
-// historyRouter.get("/", isAuthenticated, async (req, res) => {
-//   const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
-//   const histories = await History.aggregate([
-//     { $match: { owner: req.user?.id } },
-//     {
-//       $project: {
-//         all: {
-//           $slice: ["$all", parseInt(limit) * parseInt(pageNo), parseInt(limit)],
-//         },
-//       },
-//     },
-//     { $unwind: "$all" },
-//     {
-//       $lookup: {
-//         from: "audios",
-//         localField: "all.audio",
-//         foreignField: "_id",
-//         as: "audio",
-//       },
-//     },
-//     { $unwind: "$audio" },
-//     {
-//       $project: {
-//         _id: 0,
-//         id: "$all._id",
-//         audioId: "$audio._id",
-//         date: "$all.date",
-//         title: "$audio.title",
-//       },
-//     },
-//     {
-//       $group: {
-//         _id: { $dateToString: { format: "%y-%m-%d", date: "$date" } },
-//         audios: { $push: "$$ROOT" },
-//       },
-//     },
-//     {
-//       $project: {
-//         _id: 0,
-//         id: "$id",
-//         date: "$_id",
-//         audios: "$$ROOT.audios",
-//       },
-//     },
-//     { $sort: { date: -1 } },
-//   ]);
+historyRouter.delete("/:id", isAuthenticated, async (req, res) => {
+  try {
+    const historyId = req.params.id;
+    const ownerId = req.user?.id;
 
-//   res.status(200).json({ histories });
-// });
+    if (!historyId) {
+      return res
+        .status(400)
+        .json({ message: "History ID is required", success: false });
+    }
+
+    // Find the user's history document
+    const historyDoc = await History.findOne({ owner: ownerId });
+
+    if (!historyDoc) {
+      return res
+        .status(404)
+        .json({ message: "No history found", success: false });
+    }
+
+    // Ensure `all` exists and is an array
+    if (!Array.isArray(historyDoc.all)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid history structure", success: false });
+    }
+
+    // Find index safely
+    const entryIndex = historyDoc.all.findIndex(
+      (item) => item?._id?.toString() === historyId
+    );
+
+    if (entryIndex === -1) {
+      return res
+        .status(404)
+        .json({ message: "History entry not found", success: false });
+    }
+
+    // Remove the specific entry
+    historyDoc.all.splice(entryIndex, 1);
+
+    // Update `last` if the removed entry was the latest one
+    if (historyDoc.last && historyDoc.last._id?.toString() === historyId) {
+      historyDoc.last = historyDoc.all.length > 0 ? historyDoc.all[0] : null;
+    }
+
+    // Save the updated document
+    await historyDoc.save();
+
+    return res
+      .status(200)
+      .json({ message: "History entry deleted successfully!", success: true });
+
+  } catch (error) {
+    console.error("Error deleting history:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal server error", success: false });
+  }
+});
+
 
 historyRouter.get("/", isAuthenticated, async (req, res) => {
   try {
@@ -249,7 +261,6 @@ historyRouter.get("/", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
 
 historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
   const { limit = "10", pageNo = "0" } = req.query as PageRequestDocument;
