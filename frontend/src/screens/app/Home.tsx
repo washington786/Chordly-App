@@ -420,14 +420,17 @@ import {
   AudioProgressBarComponent,
   useAudioPlayer,
   AudioPlayingComponent,
-  ToastContainer
+  ToastContainer,
 } from "@components/index";
+
 import client from "src/api/client";
 import { isAxiosError } from "axios";
 import { fetchFromStorage } from "@utils/AsyncStorage";
 import { Keys } from "@utils/enums";
 import { AudioData, AudioPlay, Playlist } from "src/@types/Audios";
 import { LinearGradient } from "expo-linear-gradient";
+import ProgressBarComponent from "@components/app/ProgressBar";
+import useHistory from "@hooks/useHistory";
 
 const Home = () => {
   const height = Dimensions.get("screen").height;
@@ -450,7 +453,9 @@ const Home = () => {
     position,
     setPosition,
     isLoading,
-  } = useAudioPlayer(audioSound?.file || ""); // Use a fallback for the soundUrl
+  } = useAudioPlayer(audioSound?.file || "");
+
+  const { createHistory } = useHistory();
 
   const {
     data,
@@ -509,6 +514,20 @@ const Home = () => {
     }
   }, [isPError, pError]);
 
+  useEffect(() => {
+    if (isPlaying && audioSound?.id) {
+      postHistory(audioSound.id);
+    }
+  }, [isPlaying, audioSound?.id]); // Runs only when `isPlaying` or `audioSound.id` changes
+
+  async function postHistory(audioId: string) {
+    await createHistory({
+      audio: audioId,
+      date: new Date().toISOString(),
+      progress: position,
+    });
+  }
+
   if (isLatestLoading || isRecLoading) {
     return (
       <View style={styles.loadWrapper}>
@@ -525,12 +544,14 @@ const Home = () => {
     setPlaylistModalShow(!isPlaylistModalShow);
   };
 
-  const onPressAudio = (item: AudioPlay) => {
+  const onPressAudio = async (item: AudioPlay) => {
     setAudioSound(item); // Update audioSound first
     if (item) {
-      handleModalShow(); // Show the modal
+      handleModalShow();
     }
   };
+
+  
 
   const onLongPressAudio = () => {
     handleModalShow();
@@ -685,7 +706,20 @@ const Home = () => {
             handleSubmit={handleSubmit}
             onPlayListPress={onPlaylistPress}
           />
-          <AudioPlayingComponent />
+          {audioSound && isPlaying && (
+            <AudioPlayingComponent
+              duration={duration}
+              formatTime={formatTime}
+              handleSeek={handleSeek}
+              isPlaying
+              playPauseAudio={playPauseAudio}
+              position={position}
+              setPosition={setPosition}
+              audioCategory={audioSound.category}
+              audioPoster={audioSound.poster as string}
+              audioTitle={audioSound.title}
+            />
+          )}
         </View>
       }
     >
@@ -731,6 +765,7 @@ const Home = () => {
                 />
               )}
             </View>
+
             <View
               style={{
                 marginTop: 120,

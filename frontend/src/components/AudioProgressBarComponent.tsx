@@ -1,10 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
 import React, { FC } from "react";
 import Slider from "@react-native-community/slider";
-import useAudio from "@hooks/audioHook";
-import { Button } from "react-native-paper";
 
-interface AudioProgressBarComponentProps {
+export interface AudioProgressBarComponentProps {
   duration: number;
   handleSeek: (value: number) => void; // Make sure this function signature expects a value argument
   position: number;
