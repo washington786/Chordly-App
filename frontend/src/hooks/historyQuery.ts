@@ -31,10 +31,48 @@ export const useFetchHistory = () => {
     ...useQuery({
       queryKey: ["history"],
       queryFn: fetchHistory,
-      staleTime: 1000 * 30,
+      staleTime: 1000 * 60 * 10,
       retry: 2,
       refetchInterval: 5000, // Auto-refetch every 20 seconds
-      refetchOnWindowFocus: false, // Auto-refetch when user focuses window
+      refetchOnWindowFocus: true, // Auto-refetch when user focuses window
+      refetchOnReconnect: true, // Auto-refetch when internet reconnects
+    }),
+    refetchHistory,
+  };
+};
+
+const fetchRecentlyPlayed = async () => {
+  try {
+    const client = await getClient();
+    const { data } = await client.get("/history/recently-played");
+    return data.audios ?? [];
+  } catch (error) {
+    let errorMessage = "Sorry, something happened!";
+    if (isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || errorMessage;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    showToast({ message: errorMessage, title: "Error", type: "error" });
+    throw new Error(errorMessage); // Ensure React Query handles the error properly
+  }
+};
+
+export const useFetchRecentlyPlayed = () => {
+  const queryClient = useQueryClient();
+
+  const refetchHistory = () => {
+    queryClient.invalidateQueries({ queryKey: ["recently-played"] });
+  };
+
+  return {
+    ...useQuery({
+      queryKey: ["recently-played"],
+      queryFn: fetchRecentlyPlayed,
+      staleTime: 1000 * 60 * 10,
+      retry: 2,
+      refetchInterval: 5000, // Auto-refetch every 20 seconds
+      refetchOnWindowFocus: true, // Auto-refetch when user focuses window
       refetchOnReconnect: true, // Auto-refetch when internet reconnects
     }),
     refetchHistory,

@@ -12,8 +12,11 @@ interface prop {
 }
 const LatestUploads: FC<prop> = ({ data, onAudioLongPress, onAudioPress }) => {
   return (
-    <View>
-      <Text variant="labelLarge" style={GlobalStyles.mainTitle}>
+    <View style={{ paddingHorizontal: 6, backgroundColor: "white" }}>
+      <Text
+        variant="titleMedium"
+        style={[GlobalStyles.mainTitle, GlobalStyles.title]}
+      >
         Latest Uploads
       </Text>
       <ScrollView

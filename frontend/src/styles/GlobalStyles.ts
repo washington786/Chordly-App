@@ -55,10 +55,11 @@ const GlobalStyles = StyleSheet.create({
     color: white[50],
   },
   scroller: {
-    backgroundColor: white[100],
+    backgroundColor: white[50],
   },
   mainTitle: {
     paddingHorizontal: 5,
+    paddingVertical:8
   },
   modalWrapper: {
     flex: 1,
@@ -74,7 +75,10 @@ const GlobalStyles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    pointerEvents:"box-none"
+    pointerEvents: "box-none",
+  },
+  title: {
+    fontWeight: "400",
   },
 });
 

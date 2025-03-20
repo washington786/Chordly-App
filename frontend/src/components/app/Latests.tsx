@@ -1,7 +1,7 @@
 import { Image, Pressable, StyleSheet, View } from "react-native";
 import React from "react";
 import { Text, Title } from "react-native-paper";
-import { white } from "@styles/Colors";
+import { cod_gray, white } from "@styles/Colors";
 
 interface prop {
   poster: string;
@@ -44,6 +44,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: white[50],
     borderRadius: 10,
+    borderWidth:.2,
+    borderColor:cod_gray[300]
   },
   title: {
     paddingVertical: 3,

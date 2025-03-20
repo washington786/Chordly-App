@@ -398,7 +398,7 @@
 
 // export default Home;
 
-import { Dimensions, Image, StyleSheet, View } from "react-native";
+import { Dimensions, Image, ScrollView, StyleSheet, View } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Toast from "react-native-toast-message";
@@ -431,6 +431,7 @@ import { AudioData, AudioPlay, Playlist } from "src/@types/Audios";
 import { LinearGradient } from "expo-linear-gradient";
 import ProgressBarComponent from "@components/app/ProgressBar";
 import useHistory from "@hooks/useHistory";
+import RecentlyPlayed from "@components/app/RecentlyPlayed";
 
 const Home = () => {
   const height = Dimensions.get("screen").height;
@@ -550,8 +551,6 @@ const Home = () => {
       handleModalShow();
     }
   };
-
-  
 
   const onLongPressAudio = () => {
     handleModalShow();
@@ -675,11 +674,14 @@ const Home = () => {
       showToast({ message: errorMessage, title: "Error", type: "error" });
     }
   };
-
   return (
     <PaperProviders
       mainContentChildren={
-        <View>
+        <ScrollView
+          style={{ flex: 1, backgroundColor: "white", paddingBottom: 150 }}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+        >
           <ToastContainer>
             <Toast />
           </ToastContainer>
@@ -693,6 +695,7 @@ const Home = () => {
             handleFavAdd={handleAddFavorites}
             handlePlaylistAdd={handleAddPlaylist}
           />
+          <RecentlyPlayed />
           <PlaylistModal
             isPlaylistModalShow={isPlaylistModalShow}
             handleModalPlaylistShow={handleModalPlaylistShow}
@@ -720,7 +723,7 @@ const Home = () => {
               audioTitle={audioSound.title}
             />
           )}
-        </View>
+        </ScrollView>
       }
     >
       <ModalComponent
@@ -776,20 +779,20 @@ const Home = () => {
               <IconButton
                 icon={"stop-circle"}
                 size={70}
-                iconColor={white[50]}
-                onPress={() => {}}
+                iconColor={"#FFFFFF"}
+                onPress={() => {}} // Add a function
               />
               <IconButton
                 icon={"play-circle"}
                 size={70}
-                iconColor={white[50]}
+                iconColor={"#FFFFFF"}
                 onPress={playPauseAudio}
               />
               <IconButton
                 icon={"pause-circle"}
                 size={70}
-                iconColor={white[50]}
-                onPress={() => {}}
+                iconColor={"#FFFFFF"}
+                onPress={() => {}} // Add a function
               />
             </View>
           </LinearGradient>
@@ -797,6 +800,135 @@ const Home = () => {
       </ModalComponent>
     </PaperProviders>
   );
+
+  // return (
+  //   <PaperProviders
+  //     mainContentChildren={
+  //       <ScrollView
+  //         contentContainerStyle={{ flex: 1, backgroundColor: "white" }}
+  //         style={{ paddingBottom: 150 }}
+  //         showsVerticalScrollIndicator={false}
+  //         showsHorizontalScrollIndicator={false}
+  //       >
+  //         <ToastContainer>
+  //           <Toast />
+  //         </ToastContainer>
+  //         <LatestUploads
+  //           data={data}
+  //           onAudioLongPress={onLongPressAudio}
+  //           onAudioPress={onPressAudio}
+  //         />
+  //         <RecentlyPlayed />
+  //         <Recommended
+  //           recs={recs}
+  //           handleFavAdd={handleAddFavorites}
+  //           handlePlaylistAdd={handleAddPlaylist}
+  //         />
+  //         <PlaylistModal
+  //           isPlaylistModalShow={isPlaylistModalShow}
+  //           handleModalPlaylistShow={handleModalPlaylistShow}
+  //           playlist={playlist}
+  //           isAdding={isAdding}
+  //           title={title}
+  //           value={value}
+  //           setAdding={() => setAdding(!isAdding)}
+  //           setTitle={(val) => setTitle(val)}
+  //           setVisibility={(val) => setVisibility(val)}
+  //           handleSubmit={handleSubmit}
+  //           onPlayListPress={onPlaylistPress}
+  //         />
+  //         {audioSound && isPlaying && (
+  //           <AudioPlayingComponent
+  //             duration={duration}
+  //             formatTime={formatTime}
+  //             handleSeek={handleSeek}
+  //             isPlaying
+  //             playPauseAudio={playPauseAudio}
+  //             position={position}
+  //             setPosition={setPosition}
+  //             audioCategory={audioSound.category}
+  //             audioPoster={audioSound.poster as string}
+  //             audioTitle={audioSound.title}
+  //           />
+  //         )}
+  //         <View style={{paddingBottom:150}}/>
+  //       </ScrollView>
+  //     }
+  //   >
+  //     <ModalComponent
+  //       visible={isModalShow}
+  //       onClose={handleModalShow}
+  //       closeModal={handleModalShow}
+  //       btnStyle={{ backgroundColor: "white" }}
+  //     >
+  //       <View
+  //         style={{
+  //           ...StyleSheet.absoluteFillObject,
+  //           backgroundColor: "white",
+  //           flex: 1,
+  //           height: height,
+  //           alignItems: "center",
+  //           justifyContent: "center",
+  //         }}
+  //       >
+  //         <LinearGradient
+  //           colors={["#AACBAE", "#3A5B3E", "#2A3D2C"]}
+  //           style={styles.background}
+  //         >
+  //           <Image source={{ uri: audioSound?.poster }} style={styles.image} />
+  //           <View style={{ marginTop: 20, alignItems: "center" }}>
+  //             <Text variant="displaySmall" style={styles.txtClr}>
+  //               {audioSound?.title}
+  //             </Text>
+  //             <Text variant="bodySmall" style={styles.txtClr}>
+  //               {audioSound?.category}
+  //             </Text>
+  //             {isLoading ? (
+  //               <ActivityIndicator size="small" color="#0000ff" />
+  //             ) : (
+  //               <AudioProgressBarComponent
+  //                 duration={duration}
+  //                 handleSeek={handleSeek}
+  //                 isPlaying={isPlaying}
+  //                 playPauseAudio={playPauseAudio}
+  //                 position={position}
+  //                 setPosition={setPosition}
+  //                 formatTime={formatTime}
+  //               />
+  //             )}
+  //           </View>
+
+  //           <View
+  //             style={{
+  //               marginTop: 120,
+  //               alignItems: "center",
+  //               flexDirection: "row",
+  //             }}
+  //           >
+  //             <IconButton
+  //               icon={"stop-circle"}
+  //               size={70}
+  //               iconColor={white[50]}
+  //               onPress={() => {}}
+  //             />
+  //             <IconButton
+  //               icon={"play-circle"}
+  //               size={70}
+  //               iconColor={white[50]}
+  //               onPress={playPauseAudio}
+  //             />
+  //             <IconButton
+  //               icon={"pause-circle"}
+  //               size={70}
+  //               iconColor={white[50]}
+  //               onPress={() => {}}
+  //             />
+  //           </View>
+  //         </LinearGradient>
+  //       </View>
+  //     </ModalComponent>
+  //   </PaperProviders>
+  // );
 };
 
 const styles = StyleSheet.create({

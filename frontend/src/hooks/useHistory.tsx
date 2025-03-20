@@ -1,7 +1,6 @@
 import { showToast } from "@utils/Toast";
 import { isAxiosError } from "axios";
 import { getClient } from "src/api/client";
-import { useFetchHistory } from "./historyQuery";
 
 interface historyProps {
   audio: string;
@@ -9,6 +8,7 @@ interface historyProps {
   date: string;
 }
 export default function useHistory() {
+  
   async function createHistory({ audio, date, progress }: historyProps) {
     const client = await getClient();
     try {
@@ -63,5 +63,10 @@ export default function useHistory() {
       showToast({ message: errorMessage, title: "Error", type: "error" });
     }
   }
-  return { createHistory, deleteHistoryAudios, deleteHistoryItem };
+
+  return {
+    createHistory,
+    deleteHistoryAudios,
+    deleteHistoryItem,
+  };
 }

@@ -190,67 +190,126 @@ profileRouter.get(
 );
 
 // recommended: finding user liked kinder items
+// profileRouter.get("/recommended", isAuth, async (req, res) => {
+//   const user = req.user;
+
+//   let matched: PipelineStage.Match = { $match: { _id: { $exists: true } } };
+
+//   if (user) {
+//     // const audios = await Audio.aggregate([{ $match: { owner: user } },]);
+
+//     // fetch user history
+//     const histories = await getUserHistory(req);
+
+//     // const categories = histories.category;
+
+//     if (histories.length) {
+//       matched = {
+//         $match: {
+//           category: {
+//             $in: histories,
+//           },
+//         },
+//       };
+//     }
+
+//     return res.status(200).json({ audios: histories });
+//   }
+
+//   const audios = await Audio.aggregate([
+//     matched,
+//     {
+//       $sort: {
+//         "likes.count": -1,
+//       },
+//     },
+//     { $limit: 10 },
+//     {
+//       $lookup: {
+//         from: "users",
+//         localField: "owner",
+//         foreignField: "_id",
+//         as: "owner",
+//       },
+//     },
+//     {
+//       $unwind: "$owner",
+//     },
+//     {
+//       $project: {
+//         _id: 0,
+//         id: "$_id",
+//         name: "$name",
+//         title: "$title",
+//         about: "$about",
+//         category: "$category",
+//         file: "$file.url",
+//         poster: "$poster.url",
+//         owner: { name: "$owner.name", id: "$owner._id" },
+//       },
+//     },
+//   ]);
+
+//   res.status(200).json({ audios });
+// });
 profileRouter.get("/recommended", isAuth, async (req, res) => {
-  const user = req.user;
+  try {
+    const user = req.user;
+    let matched: PipelineStage.Match = { $match: { _id: { $exists: true } } };
 
-  let matched: PipelineStage.Match = { $match: { _id: { $exists: true } } };
+    if (user) {
+      // Fetch user history
+      const histories = await getUserHistory(req);
 
-  if (user) {
-    // const audios = await Audio.aggregate([{ $match: { owner: user } },]);
+      // Extract categories if `histories` contains audio records
+      const categories = histories
+        .map((history) => history.category)
+        .filter(Boolean);
 
-    // fetch user history
-    const histories = await getUserHistory(req);
-
-    // const categories = histories.category;
-
-    if (histories.length) {
-      matched = {
-        $match: {
-          category: {
-            $in: histories,
+      if (categories.length > 0) {
+        matched = {
+          $match: {
+            category: {
+              $in: categories,
+            },
           },
-        },
-      };
+        };
+      }
     }
 
-    return res.status(200).json({ audios: histories });
+    const audios = await Audio.aggregate([
+      matched,
+      { $sort: { "likes.count": -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+        },
+      },
+      { $unwind: "$owner" },
+      {
+        $project: {
+          _id: 0,
+          id: "$_id",
+          name: "$name",
+          title: "$title",
+          about: "$about",
+          category: "$category",
+          file: "$file.url",
+          poster: "$poster.url",
+          owner: { name: "$owner.name", id: "$owner._id" },
+        },
+      },
+    ]);
+
+    res.status(200).json({ audios });
+  } catch (error) {
+    console.error("Error fetching recommended audios:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-
-  const audios = await Audio.aggregate([
-    matched,
-    {
-      $sort: {
-        "likes.count": -1,
-      },
-    },
-    { $limit: 10 },
-    {
-      $lookup: {
-        from: "users",
-        localField: "owner",
-        foreignField: "_id",
-        as: "owner",
-      },
-    },
-    {
-      $unwind: "$owner",
-    },
-    {
-      $project: {
-        _id: 0,
-        id: "$_id",
-        name: "$name",
-        title: "$title",
-        about: "$about",
-        category: "$category",
-        file: "$file.url",
-        poster: "$poster.url",
-        owner: { name: "$owner.name", id: "$owner._id" },
-      },
-    },
-  ]);
-
-  res.status(200).json({ audios });
 });
 
 profileRouter.get("/auto-playlist", isAuthenticated, async (req, res) => {

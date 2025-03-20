@@ -4,7 +4,7 @@ import { validate } from "#/middleware/vals/validator";
 import History, { HistoryDocument, historyType } from "#/models/history";
 import { historySchema } from "#/utils/validationSchema";
 import { Router } from "express";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 
 const historyRouter = Router();
 
@@ -183,7 +183,6 @@ historyRouter.delete("/:id", isAuthenticated, async (req, res) => {
     return res
       .status(200)
       .json({ message: "History entry deleted successfully!", success: true });
-
   } catch (error) {
     console.error("Error deleting history:", error);
     return res
@@ -191,7 +190,6 @@ historyRouter.delete("/:id", isAuthenticated, async (req, res) => {
       .json({ message: "Internal server error", success: false });
   }
 });
-
 
 historyRouter.get("/", isAuthenticated, async (req, res) => {
   try {
@@ -262,63 +260,253 @@ historyRouter.get("/", isAuthenticated, async (req, res) => {
   }
 });
 
+// historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
+//   const { limit = "10", pageNo = "0" } = req.query as PageRequestDocument;
+
+//   const data = await History.aggregate([
+//     { $match: { owner: req.user?.id } },
+//     {
+//       $project: {
+//         myHistory: {
+//           $slice: ["$all", parseInt(limit) * parseInt(pageNo), parseInt(limit)],
+//         },
+//       },
+//     },
+//     {
+//       $project: {
+//         histories: {
+//           $sortArray: { input: "$myHistory", sortBy: { date: -1 } },
+//         },
+//       },
+//     },
+//     {
+//       $unwind: { path: "$histories", includeArrayIndex: "index" },
+//     },
+//     {
+//       $lookup: {
+//         from: "audios",
+//         localField: "histories.audio",
+//         foreignField: "_id",
+//         as: "history",
+//       },
+//     },
+//     {
+//       $unwind: "$history",
+//     },
+//     {
+//       $lookup: {
+//         from: "users",
+//         localField: "history.owner",
+//         foreignField: "_id",
+//         as: "owner",
+//       },
+//     },
+//     { $unwind: "$owner" },
+//     {
+//       $project: {
+//         _id: 0,
+//         id: "$history._id",
+//         date: "$history.date",
+//         progress: "$history.progress",
+//         poster: "$history.poster.url",
+//         file: "$history.file.url",
+//         category: "$history.category",
+//         owner: { name: "$owner.name", id: "$owner._id" },
+//       },
+//     },
+//   ]);
+
+//   res.status(200).json({ data });
+// });
+// historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
+//   try {
+//     const { limit = "10", pageNo = "0" } = req.query as PageRequestDocument;
+
+//     const data = await History.aggregate([
+//       { $match: { owner: req.user?.id, all: { $exists: true, $type: "array" } } },
+//       { $unwind: "$all" },
+//       { $sort: { "all.date": -1 } },
+//       { $group: { _id: "$_id", sortedHistory: { $push: "$all" } } },
+//       {
+//         $project: {
+//           paginatedHistory: {
+//             $slice: ["$sortedHistory", parseInt(pageNo) * parseInt(limit), parseInt(limit)],
+//           },
+//         },
+//       },
+//       { $unwind: "$paginatedHistory" },
+//       {
+//         $lookup: {
+//           from: "audios",
+//           localField: "paginatedHistory.audio",
+//           foreignField: "_id",
+//           as: "history",
+//         },
+//       },
+//       { $unwind: "$history" },
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "history.owner",
+//           foreignField: "_id",
+//           as: "owner",
+//         },
+//       },
+//       { $unwind: "$owner" },
+//       {
+//         $project: {
+//           _id: 0,
+//           id: "$history._id",
+//           date: "$history.date",
+//           progress: "$history.progress",
+//           poster: "$history.poster.url",
+//           file: "$history.file.url",
+//           category: "$history.category",
+//           owner: { name: "$owner.name", id: "$owner._id" },
+//         },
+//       },
+//     ]);
+
+//     res.status(200).json({ data });
+//   } catch (error) {
+//     console.error("Error fetching recently played history:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
+// historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
+//   try {
+//     const { limit = "10", pageNo = "0" } = req.query as PageRequestDocument;
+
+//     const data = await History.aggregate([
+//       {
+//         $match: {
+//           owner: req.user?.id,
+//           histories: { $exists: true, $not: { $size: 0 } },
+//         },
+//       },
+
+//       // Unwind histories array
+//       { $unwind: "$histories" },
+
+//       // Unwind audios inside histories
+//       { $unwind: "$histories.audios" },
+
+//       // Sort by date (descending)
+//       { $sort: { "histories.audios.date": -1 } },
+
+//       // Apply pagination
+//       {
+//         $skip: parseInt(pageNo) * parseInt(limit),
+//       },
+//       {
+//         $limit: parseInt(limit),
+//       },
+
+//       // Lookup audio details
+//       {
+//         $lookup: {
+//           from: "audios",
+//           localField: "histories.audios.audioId",
+//           foreignField: "_id",
+//           as: "audioDetails",
+//         },
+//       },
+//       { $unwind: "$audioDetails" },
+
+//       // Lookup owner details
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "audioDetails.owner",
+//           foreignField: "_id",
+//           as: "owner",
+//         },
+//       },
+//       { $unwind: "$owner" },
+
+//       // Final projection
+//       {
+//         $project: {
+//           _id: 0,
+//           id: "$audioDetails._id",
+//           title: "$audioDetails.title",
+//           date: "$histories.audios.date",
+//           progress: "$audioDetails.progress",
+//           poster: "$audioDetails.poster.url",
+//           file: "$audioDetails.file.url",
+//           category: "$audioDetails.category",
+//           owner: { name: "$owner.name", id: "$owner._id" },
+//         },
+//       },
+//     ]);
+
+//     res.status(200).json({ data });
+//   } catch (error) {
+//     console.error("Error fetching recently played history:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
 historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
-  const { limit = "10", pageNo = "0" } = req.query as PageRequestDocument;
+  try {
+    const { limit = "10", pageNo = "0" } = req.query as PageRequestDocument;
 
-  const data = await History.aggregate([
-    { $match: { owner: req.user?.id } },
-    {
-      $project: {
-        myHistory: {
-          $slice: ["$all", parseInt(limit) * parseInt(pageNo), parseInt(limit)],
+    const data = await History.aggregate([
+      { $match: { owner: new Types.ObjectId(req.user?.id) } },
+
+      // Preserve documents even if 'all' is empty
+      { $unwind: { path: "$all", preserveNullAndEmptyArrays: true } },
+
+      { $sort: { "all.date": -1 } },
+      { $skip: parseInt(pageNo) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+
+      // Lookup audio details
+      {
+        $lookup: {
+          from: "audios",
+          localField: "all.audio",
+          foreignField: "_id",
+          as: "audioDetails",
         },
       },
-    },
-    {
-      $project: {
-        histories: {
-          $sortArray: { input: "$myHistory", sortBy: { date: -1 } },
+      { $unwind: { path: "$audioDetails", preserveNullAndEmptyArrays: true } },
+
+      // Lookup owner details
+      {
+        $lookup: {
+          from: "users",
+          localField: "audioDetails.owner",
+          foreignField: "_id",
+          as: "owner",
         },
       },
-    },
-    {
-      $unwind: { path: "$histories", includeArrayIndex: "index" },
-    },
-    {
-      $lookup: {
-        from: "audios",
-        localField: "histories.audio",
-        foreignField: "_id",
-        as: "history",
-      },
-    },
-    {
-      $unwind: "$history",
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "history.owner",
-        foreignField: "_id",
-        as: "owner",
-      },
-    },
-    { $unwind: "$owner" },
-    {
-      $project: {
-        _id: 0,
-        id: "$history._id",
-        date: "$history.date",
-        progress: "$history.progress",
-        poster: "$history.poster.url",
-        file: "$history.file.url",
-        category: "$history.category",
-        owner: { name: "$owner.name", id: "$owner._id" },
-      },
-    },
-  ]);
+      { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
 
-  res.status(200).json({ data });
+      // Final projection
+      {
+        $project: {
+          _id: 0,
+          id: "$audioDetails._id",
+          title: "$audioDetails.title",
+          date: "$all.date",
+          progress: "$all.progress",
+          poster: "$audioDetails.poster.url",
+          file: "$audioDetails.file.url",
+          category: "$audioDetails.category",
+          owner: { name: "$owner.name", id: "$owner._id" },
+        },
+      },
+    ]);
+
+    console.log("Fetched Data:", data); // Debugging line
+
+    res.status(200).json({ audios:data });
+  } catch (error) {
+    console.error("Error fetching recently played history:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 export default historyRouter;
