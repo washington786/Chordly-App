@@ -40,7 +40,7 @@ const fetchFavorites = async () => {
       errorMessage = error.message;
     }
     showToast({ message: errorMessage, title: "Error", type: "error" });
-    throw new Error(errorMessage); // Ensure React Query correctly marks the error
+    throw new Error(errorMessage);
   }
 };
 
@@ -49,6 +49,9 @@ export const useFetchedFavorites = () => {
     queryKey: ["favorites"],
     queryFn: fetchFavorites,
     staleTime: 1000 * 60 * 5, // Cache data for 5 minutes
-    retry: 2, // Retry failed requests twice before showing an error
+    retry: 2,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 };

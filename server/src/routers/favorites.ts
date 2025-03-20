@@ -4,89 +4,151 @@ import { isVerified } from "#/middleware/auth/authorization";
 import Audio from "#/models/audios";
 import Favorites from "#/models/favourites";
 import { Router } from "express";
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 
 const favorites = Router();
 
 // create favorites
-favorites.post("/", isAuthenticated, isVerified, async (req, res) => {
+// favorites.post("/", isAuthenticated, isVerified, async (req, res) => {
+//   const { audioId } = req.params;
+
+//   let _status: any = "added" | "removed";
+
+//   if (!isValidObjectId(audioId)) {
+//     return res.status(403).json({ message: "invalid audio id" });
+//   }
+
+//   const audio = await Audio.findById(audioId);
+
+//   if (!audio) {
+//     return res.status(404).json({ message: "Sorry, no audio found" });
+//   }
+
+//   // audio is already in favorites
+
+//   const favorites = await Favorites.findOne({
+//     owner: req.user?.id,
+//     items: audioId,
+//   });
+
+//   if (favorites) {
+//     await Favorites.updateOne(
+//       { owner: req.user?.id },
+//       { $pull: { items: audioId } }
+//     );
+//     _status = "removed";
+//   } else {
+//     // creating a new favorites list
+
+//     const fav = await Favorites.findOne({ owner: req.user?.id });
+
+//     if (fav) {
+//       await Favorites.updateOne(
+//         { owner: req.user?.id },
+//         { $addToSet: { items: audioId } }
+//       );
+//       status = "added";
+//     } else {
+//       // trying to add new audio to old list.
+//       await Favorites.create({ owner: req.user?.id, items: [audioId] });
+//     }
+//     _status = "added";
+//   }
+
+//   if (_status === "added") {
+//     await Audio.findByIdAndUpdate(audioId, {
+//       $addToSet: { likes: req.user?.id },
+//     });
+//   }
+
+//   if (_status === "removed") {
+//     await Audio.findByIdAndUpdate(audioId, {
+//       $pull: { likes: req.user?.id },
+//     });
+//   }
+//   res.status(201).json({ message: `Audio ${_status} to favorites` });
+// });
+favorites.post("/:audioId", isAuthenticated, isVerified, async (req, res) => {
   const { audioId } = req.params;
 
-  let _status: any = "added" | "removed";
+  console.log("Received audioId:", audioId); // Debugging
 
   if (!isValidObjectId(audioId)) {
     return res.status(403).json({ message: "invalid audio id" });
   }
 
-  const audio = await Audio.findById(audioId);
+  try {
+    const audio = await Audio.findById(audioId);
 
-  if (!audio) {
-    return res.status(404).json({ message: "Sorry, no audio found" });
-  }
+    if (!audio) {
+      return res.status(404).json({ message: "Sorry, no audio found" });
+    }
 
-  // audio is already in favorites
+    // Check if audio is already in favorites
+    const favorites = await Favorites.findOne({
+      owner: req.user?.id,
+      items: audioId,
+    });
 
-  const favorites = await Favorites.findOne({
-    owner: req.user?.id,
-    items: audioId,
-  });
+    let _status = "added";
 
-  if (favorites) {
-    await Favorites.updateOne(
-      { owner: req.user?.id },
-      { $pull: { items: audioId } }
-    );
-    _status = "removed";
-  } else {
-    // creating a new favorites list
-
-    const fav = await Favorites.findOne({ owner: req.user?.id });
-
-    if (fav) {
+    if (favorites) {
       await Favorites.updateOne(
         { owner: req.user?.id },
-        { $addToSet: { items: audioId } }
+        { $pull: { items: audioId } }
       );
-      status = "added";
+      _status = "removed";
     } else {
-      // trying to add new audio to old list.
-      await Favorites.create({ owner: req.user?.id, items: [audioId] });
+      const fav = await Favorites.findOne({ owner: req.user?.id });
+
+      if (fav) {
+        await Favorites.updateOne(
+          { owner: req.user?.id },
+          { $addToSet: { items: audioId } }
+        );
+      } else {
+        await Favorites.create({ owner: req.user?.id, items: [audioId] });
+      }
+      _status = "added";
     }
-    _status = "added";
-  }
 
-  if (_status === "added") {
-    await Audio.findByIdAndUpdate(audioId, {
-      $addToSet: { likes: req.user?.id },
-    });
-  }
+    if (_status === "added") {
+      await Audio.findByIdAndUpdate(audioId, {
+        $addToSet: { likes: req.user?.id },
+      });
+    } else {
+      await Audio.findByIdAndUpdate(audioId, {
+        $pull: { likes: req.user?.id },
+      });
+    }
 
-  if (_status === "removed") {
-    await Audio.findByIdAndUpdate(audioId, {
-      $pull: { likes: req.user?.id },
-    });
+    res.status(201).json({ message: `Audio ${_status} to favorites` });
+  } catch (error) {
+    console.error("Error adding to favorites:", error);
+    res.status(500).json({ message: "Server error" });
   }
-  res.status(201).json({ message: `Audio ${_status} to favorites` });
 });
 
 favorites.get("/", isAuthenticated, isVerified, async (req, res) => {
-  const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
-
+  let { limit = "20", pageNo = "1" } = req.query; // Ensure page starts at 1
+  
   try {
     const _favorites = await Favorites.aggregate([
-      { $match: { owner: req.user?.id } },
+      {
+        $match: { owner: new Types.ObjectId(req.user?.id) }, // Ensure ObjectId match
+      },
       {
         $project: {
           audioIds: {
             $slice: [
-              "$items", // Corrected from $$items to "$items"
-              parseInt(pageNo) * parseInt(limit),
+              "$items",
+              parseInt(pageNo-1) * parseInt(limit), // Correct offset calculation
               parseInt(limit),
             ],
           },
         },
       },
-      { $unwind: { path: "$audioIds", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$audioIds", preserveNullAndEmptyArrays: true } }, // Preserve empty lists
       {
         $lookup: {
           from: "audios",

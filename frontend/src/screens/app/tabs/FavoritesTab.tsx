@@ -17,7 +17,7 @@ const FavoritesTab = () => {
   useEffect(() => {
     if (isError && error) {
       showToast({
-        message: error?.message ?? "Sorry, something happened.",
+        message: error.message,
         title: "Error",
         type: "error",
       });
@@ -31,9 +31,10 @@ const FavoritesTab = () => {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
+      
       contentContainerStyle={[
         GlobalStyles.scroll,
-        { backgroundColor: data?.length > 0 ? white[50] : white[100] },
+        { backgroundColor: white[100],gap:4 },
       ]}
     >
       <ToastContainer>
@@ -44,7 +45,7 @@ const FavoritesTab = () => {
         return (
           <ItemComponent
             key={audio.id}
-            category={audio.category}
+            category={audio.about}
             title={audio.title}
             id={audio.id}
             poster={audio.poster}

@@ -432,6 +432,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import ProgressBarComponent from "@components/app/ProgressBar";
 import useHistory from "@hooks/useHistory";
 import RecentlyPlayed from "@components/app/RecentlyPlayed";
+import { useToggleFavorite } from "@hooks/useFavorites";
 
 const Home = () => {
   const height = Dimensions.get("screen").height;
@@ -457,6 +458,8 @@ const Home = () => {
   } = useAudioPlayer(audioSound?.file || "");
 
   const { createHistory } = useHistory();
+
+  const { mutate: toggleFavorite, isSuccess } = useToggleFavorite();
 
   const {
     data,
@@ -558,10 +561,19 @@ const Home = () => {
 
   const handleAddFavorites = async (item: any) => {
     const token = await fetchFromStorage(Keys.AUTH_TOKEN);
+    if (!token) {
+      showToast({
+        message: "Authentication required",
+        title: "Error",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       const { id } = item;
-      const { data } = await client.post(
-        `/favorites/?audioId=${id}`,
+      const response = await client.post(
+        `/favorites/${id}`,
         {},
         {
           headers: {
@@ -569,12 +581,14 @@ const Home = () => {
           },
         }
       );
+
       showToast({
         message: "Added to favorites",
         title: "Success",
         type: "success",
       });
-      console.log("added: ", data);
+
+      console.info("Added to favorites:", response.data);
     } catch (error) {
       let errorMessage = "An error occurred";
       if (isAxiosError(error)) {
@@ -586,6 +600,10 @@ const Home = () => {
       showToast({ message: errorMessage, title: "Error", type: "error" });
     }
   };
+
+  function handleToggleFavorite(id:string){
+    toggleFavorite(id);
+  }
 
   const handleAddPlaylist = (item: any) => {
     handleModalPlaylistShow();
@@ -692,7 +710,7 @@ const Home = () => {
           />
           <Recommended
             recs={recs}
-            handleFavAdd={handleAddFavorites}
+            // handleFavAdd={handleAddFavorites}
             handlePlaylistAdd={handleAddPlaylist}
           />
           <RecentlyPlayed />

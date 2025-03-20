@@ -3,13 +3,15 @@ import React, { FC } from "react";
 import { IconButton, Text } from "react-native-paper";
 import GlobalStyles from "@styles/GlobalStyles";
 import { AudioData } from "src/@types/Audios";
+import { useToggleFavorite } from "@hooks/useFavorites";
 
 interface prop {
   recs: any;
   handlePlaylistAdd(item: AudioData): void;
-  handleFavAdd(item: AudioData): void;
+  handleFavAdd?(item: AudioData): void;
 }
-const Recommended: FC<prop> = ({ recs, handleFavAdd, handlePlaylistAdd }) => {
+const Recommended: FC<prop> = ({ recs, handlePlaylistAdd }) => {
+  const { mutate: toggleFavorite } = useToggleFavorite();
   return (
     <View style={{ paddingHorizontal:6 }}>
       <Text
@@ -68,7 +70,7 @@ const Recommended: FC<prop> = ({ recs, handleFavAdd, handlePlaylistAdd }) => {
                         size={20}
                         icon="cards-heart"
                         iconColor="white"
-                        onPress={() => handleFavAdd(item)}
+                        onPress={() => toggleFavorite(item.id as string)}
                         rippleColor="yellow"
                       />
                     </View>
