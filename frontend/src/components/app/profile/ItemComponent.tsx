@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { FC } from "react";
-import { white } from "@styles/Colors";
+import { cod_gray, white } from "@styles/Colors";
 
 interface audioProps {
   id: string;
@@ -14,11 +14,11 @@ const ItemComponent: FC<audioProps> = ({ category, id, poster, title }) => {
   return (
     <TouchableOpacity style={styles.container} key={id}>
       <Image source={{ uri: poster || cover }} style={styles.image} />
-      <View>
+      <View style={{ paddingHorizontal:6 }}>
         <Text numberOfLines={1} ellipsizeMode="tail">
           {title}
         </Text>
-        <Text numberOfLines={1} ellipsizeMode="tail">
+        <Text numberOfLines={2} ellipsizeMode="tail" style={styles.txt}>
           {category}
         </Text>
       </View>
@@ -37,12 +37,17 @@ const styles = StyleSheet.create({
   },
   container: {
     flexDirection: "row",
-    gap: 4,
+    gap: 8,
     borderRadius: 10,
     alignItems: "center",
     paddingHorizontal: 5,
     paddingVertical: 4,
     backgroundColor: white[50],
     marginVertical: 5,
+    borderWidth:0.2,
+    borderColor:cod_gray[300]
   },
+  txt:{
+    fontWeight:"200"
+  }
 });

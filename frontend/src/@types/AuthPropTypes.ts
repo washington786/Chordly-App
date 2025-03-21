@@ -22,8 +22,12 @@ export type profilePropTypes = {
   settings: undefined;
 };
 export type publicProfilePropTypes = {
-  publicUploads: undefined;
-  publicPlaylist: undefined;
+  publicUploads: {
+    profileId: string | undefined;
+  };
+  publicPlaylist: {
+    profileId: string | undefined;
+  };
 };
 
 export type DashboardTypes = {

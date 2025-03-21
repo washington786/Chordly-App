@@ -47,7 +47,7 @@ const PublicProfile = () => {
   const { profile } = data as publicProfileProps;
 
   return (
-    <ScrollView
+    <View
       style={{
         flex: 1,
         backgroundColor: white[50],
@@ -91,14 +91,16 @@ const PublicProfile = () => {
           name="publicUploads"
           component={PublicUploads}
           options={{ tabBarLabel: "Uploads" }}
+          initialParams={{ profileId: profileId }}
         />
         <Tabs.Screen
           name="publicPlaylist"
           component={PublicPlaylist}
           options={{ tabBarLabel: "Playlist" }}
+          initialParams={{ profileId: profileId }}
         />
       </Tabs.Navigator>
-    </ScrollView>
+    </View>
   );
 };
 
