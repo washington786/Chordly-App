@@ -69,9 +69,9 @@ export const useFetchRecentlyPlayed = () => {
     ...useQuery({
       queryKey: ["recently-played"],
       queryFn: fetchRecentlyPlayed,
-      staleTime: 1000 * 60 * 10,
+      staleTime: 1000 * 60 * 50,
       retry: 2,
-      refetchInterval: 5000, // Auto-refetch every 20 seconds
+      refetchInterval: 1000*60*50, // Auto-refetch every 20 seconds
       refetchOnWindowFocus: true, // Auto-refetch when user focuses window
       refetchOnReconnect: true, // Auto-refetch when internet reconnects
     }),
