@@ -21,3 +21,14 @@ export type profilePropTypes = {
   profile: undefined;
   settings: undefined;
 };
+export type publicProfilePropTypes = {
+  publicUploads: undefined;
+  publicPlaylist: undefined;
+};
+
+export type DashboardTypes = {
+  dashboard: undefined;
+  publicProfile: {
+    profileId?: string;
+  };
+};

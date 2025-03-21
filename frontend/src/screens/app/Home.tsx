@@ -30,6 +30,8 @@ import { AudioData, AudioPlay, Playlist } from "src/@types/Audios";
 import { LinearGradient } from "expo-linear-gradient";
 import useHistory from "@hooks/useHistory";
 import RecentlyPlayed from "@components/app/RecentlyPlayed";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
+import { DashboardTypes } from "src/@types/AuthPropTypes";
 
 const Home = () => {
   const height = Dimensions.get("screen").height;
@@ -41,6 +43,8 @@ const Home = () => {
   const [title, setTitle] = useState<string>("");
   const [audio, setAudio] = useState<AudioData>();
   const [audioSound, setAudioSound] = useState<AudioPlay | null>(null); // Initialize as null
+
+  const navigation = useNavigation<NavigationProp<DashboardTypes>>();
 
   // Always call useAudioPlayer, even if audioSound is null
   const {
@@ -239,6 +243,11 @@ const Home = () => {
       showToast({ message: errorMessage, title: "Error", type: "error" });
     }
   };
+
+  function navigationToProfile() {
+    handleModalShow();
+    navigation.navigate("publicProfile", { profileId: audioSound?.owner.id });
+  }
   return (
     <PaperProviders
       mainContentChildren={
@@ -342,10 +351,10 @@ const Home = () => {
               }}
             >
               <IconButton
-                icon={"stop-circle"}
+                icon={"account-music-outline"}
                 size={70}
                 iconColor={"#FFFFFF"}
-                onPress={() => {}} // Add a function
+                onPress={navigationToProfile} // Add a function
               />
               <IconButton
                 icon={"play-circle"}

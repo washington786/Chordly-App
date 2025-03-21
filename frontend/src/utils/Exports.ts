@@ -2,6 +2,7 @@ import AuthNavigator from "@navigation/AuthNavigator";
 import MainNavigation from "@navigation/MainNavigation";
 import Home from "@screens/app/Home";
 import Profile from "@screens/app/Profile";
+import PublicProfile from "@screens/app/PublicProfile";
 import Upload from "@screens/app/Upload";
 import ForgotPassword from "@screens/auth/ForgotPassword";
 import OneTimePinVerification from "@screens/auth/OneTimePinVerification";
@@ -20,4 +21,5 @@ export {
   Home,
   Upload,
   Profile,
+  PublicProfile
 };
