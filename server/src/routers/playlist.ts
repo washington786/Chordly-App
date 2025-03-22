@@ -68,7 +68,7 @@ playlistRouter.patch(
   validate(OldPlaylistValidationSchema),
   async (req: UpdatePlaylistDoc, res: Response): Promise<void> => {
     const { visibility, title, id, items } = req.body;
-    const ownerId = req.user?.id as ObjectId;
+    const ownerId = req.user?.id;
 
     const playlist = await Playlist.findOneAndUpdate(
       { _id: id, owner: ownerId },

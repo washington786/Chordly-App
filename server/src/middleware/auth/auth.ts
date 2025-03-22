@@ -1,20 +1,38 @@
 import passwordResetToken from "#/models/passwordResetToken";
 import users from "#/models/users";
 import { JWT_SECRET } from "#/utils/variables";
-import { RequestHandler } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 
 import jwt from "jsonwebtoken";
+import { Types } from "mongoose";
 
+interface User {
+  _id: Types.ObjectId; // Use ObjectId instead of string
+  id?: Types.ObjectId;
+  email: string;
+  name: string;
+  verified: boolean;
+  tokens: string[];
+  avatar?: {
+    url: string;
+    public_id: string;
+  };
+}
+// Extend the Express Request interface globally
 declare global {
   namespace Express {
     interface Request {
-      user: {id:string};
-      token: string;
+      user?: User; // Make user optional
+      token?: string; // Add token to the request object
     }
   }
 }
 
-export const isValidPassResetToken: RequestHandler = async (req, res, next) => {
+export const isValidPassResetToken: RequestHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   /* verify if the token is still valid. */
 
   const { token, userId } = req.body;
@@ -36,18 +54,26 @@ export const isValidPassResetToken: RequestHandler = async (req, res, next) => {
   next();
 };
 
-export const grantValid: RequestHandler = async (req, res) => {
+export const grantValid: RequestHandler = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   /* verify if the token is still valid. */
 
   res.status(200).json({ valid: true });
 };
 
-export const isAuthenticated: RequestHandler = async (req, res, next) => {
+export const isAuthenticated: RequestHandler = async (
+  req: Request,
+  res: Response,
+  next
+): Promise<void> => {
   const { authorization } = req.headers;
   const token = authorization?.split("Bearer ")[1];
 
   if (!token) {
-    return res.status(403).json({ message: "Unauthorized" });
+    res.status(403).json({ message: "Unauthorized" });
+    return;
   }
 
   const verified = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
@@ -57,7 +83,8 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = await users.findOne({ _id: id, tokens: token });
 
   if (!user) {
-    return res.status(403).json({ message: "Unauthorized" });
+    res.status(403).json({ message: "Unauthorized" });
+    return;
   }
 
   req.user = user;
@@ -65,7 +92,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   next();
 };
 
-export const isAuth: RequestHandler = async (req, res, next) => {
+export const isAuth: RequestHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   const { authorization } = req.headers;
   const token = authorization?.split("Bearer ")[1];
 
@@ -77,7 +108,8 @@ export const isAuth: RequestHandler = async (req, res, next) => {
     const user = await users.findOne({ _id: id, tokens: token });
 
     if (!user) {
-      return res.status(403).json({ message: "Unauthorized" });
+      res.status(403).json({ message: "Unauthorized" });
+      return;
     }
 
     req.user = user;

@@ -92,34 +92,81 @@ authRouter.post(
   async (req: VerifyEmailRequest, res: Response): Promise<void> => {
     const { token, userId } = req.body;
 
-    const user = await emailVerificationToken.findOne({ owner: userId });
+    // Find the email verification token
+    const verificationToken = await emailVerificationToken.findOne({ owner: userId });
+
+    if (!verificationToken) {
+      res.status(403).json({ error: "User not found" });
+      return;
+    }
+
+    // Find the user associated with the token
+    const user = await users.findById(userId);
 
     if (!user) {
       res.status(403).json({ error: "User not found" });
       return;
     }
 
+    // Check if the user is already verified
     if (user.verified) {
       res.status(422).json({ error: "User account already verified." });
       return;
     }
 
-    const matched = await user.compareToken(token);
+    // Compare the token
+    const matched = await verificationToken.compareToken(token);
 
     if (!matched) {
       res.status(403).json({ error: "Invalid token" });
       return;
     }
 
-    await users.findByIdAndUpdate(userId, {
-      verified: true,
-    });
+    // Mark the user as verified
+    user.verified = true;
+    await user.save();
 
-    await emailVerificationToken.findByIdAndDelete(user._id);
+    // Delete the email verification token
+    await emailVerificationToken.findByIdAndDelete(verificationToken._id);
 
     res.status(200).json({ message: "Email verified successfully" });
   }
 );
+
+// authRouter.post(
+//   "/verify-email",
+//   validate(verifyEmailBody),
+//   async (req: VerifyEmailRequest, res: Response): Promise<void> => {
+//     const { token, userId } = req.body;
+
+//     const user = await emailVerificationToken.findOne({ owner: userId });
+
+//     if (!user) {
+//       res.status(403).json({ error: "User not found" });
+//       return;
+//     }
+
+//     if (user.verified) {
+//       res.status(422).json({ error: "User account already verified." });
+//       return;
+//     }
+
+//     const matched = await user.compareToken(token);
+
+//     if (!matched) {
+//       res.status(403).json({ error: "Invalid token" });
+//       return;
+//     }
+
+//     await users.findByIdAndUpdate(userId, {
+//       verified: true,
+//     });
+
+//     await emailVerificationToken.findByIdAndDelete(user._id);
+
+//     res.status(200).json({ message: "Email verified successfully" });
+//   }
+// );
 
 authRouter.post(
   "/re-verify",

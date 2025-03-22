@@ -119,9 +119,10 @@ historyRouter.delete(
 
     if (removeAll) {
       await History.findOneAndDelete({ owner: req.user?.id });
-      return res
+       res
         .status(200)
         .json({ message: "All history deleted", success: true });
+        return;
     }
 
     const histories = req.query.histories as string;
@@ -154,7 +155,7 @@ historyRouter.delete(
       }
 
       // Find the user's history document
-      const historyDoc = await History.findOne({ owner: ownerId });
+      const historyDoc:any = await History.findOne({ owner: ownerId });
 
       if (!historyDoc) {
         res.status(404).json({ message: "No history found", success: false });
@@ -171,7 +172,7 @@ historyRouter.delete(
 
       // Find index safely
       const entryIndex = historyDoc.all.findIndex(
-        (item) => item?._id?.toString() === historyId
+        (item:any) => item?._id?.toString() === historyId
       );
 
       if (entryIndex === -1) {

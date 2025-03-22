@@ -1,4 +1,4 @@
-import { Model, model, ObjectId, Schema } from "mongoose";
+import { Model, model, ObjectId, Schema,Document } from "mongoose";
 import bcryptjs, { compare } from "bcryptjs";
 
 interface User {
@@ -69,6 +69,7 @@ const userSchema = new Schema<User, {}, Methods>(
   },
   { timestamps: true }
 );
+
 
 userSchema.pre("save", async function (next) {
   try {

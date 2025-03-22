@@ -281,7 +281,7 @@ profileRouter.get(
 
         // Extract categories if `histories` contains audio records
         const categories = histories
-          .map((history) => history.category)
+          .map((history) => history)
           .filter(Boolean);
 
         if (categories.length > 0) {
@@ -417,7 +417,7 @@ profileRouter.get("/auto-playlist", isAuthenticated, async (req, res) => {
     let matched: PipelineStage.Match = { $match: { _id: { $exists: true } } };
 
     if (histories.length > 0) {
-      const historyTitles = histories.map((h) => h.title); // Extract only titles
+      const historyTitles = histories.map((h:any) => h.title); // Extract only titles
       matched = { $match: { title: { $in: historyTitles } } };
     }
 

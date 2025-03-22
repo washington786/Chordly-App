@@ -144,7 +144,7 @@ import { audioValidationSchema } from "#/utils/audioValidationSchema";
 import { CategoryTypes } from "#/utils/audio_categories";
 import formidable from "formidable";
 import cloudinary from "#/utils/cloud";
-import Audio from "#/models/audios";
+import Audio, { AudioDocument } from "#/models/audios";
 
 const audio = Router();
 
@@ -268,11 +268,18 @@ audio.patch(
   }
 );
 
+
 audio.get("/latest", async (req: Request, res: Response): Promise<void> => {
   try {
-    const list = await Audio.find().sort("-createdAt").populate("owner");
+    const list = await Audio.find().sort("-createdAt").populate("owner", "name _id");
     const formatted = list.map((item) => {
-      const { _id, about, category, title, poster, file, owner } = item;
+      const plainItem = item.toObject();
+      const { _id, about, category, title, poster, file, owner } = plainItem;
+
+      const ownerData =
+        owner && typeof owner === "object" && "name" in owner && "_id" in owner
+          ? { name: owner.name, id: owner._id }
+          : null;
 
       return {
         id: _id,
@@ -281,7 +288,7 @@ audio.get("/latest", async (req: Request, res: Response): Promise<void> => {
         title,
         poster: poster?.url,
         file: file.url,
-        owner: owner ? { name: owner.name, id: owner._id } : null,
+        owner: ownerData,
       };
     });
 
