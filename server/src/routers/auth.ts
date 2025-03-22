@@ -19,14 +19,12 @@ import {
   verifyEmailBody,
 } from "#/utils/validationSchema";
 import { JWT_SECRET, PASSWORD, RESET_LINK, USERNAME } from "#/utils/variables";
-import { Request, Router } from "express";
+import { Request, Response, Router } from "express";
 import nodemailer from "nodemailer";
 
 import jwt from "jsonwebtoken";
 
 import { File } from "formidable";
-import path from "path";
-import fs from "fs";
 import { fileParse } from "#/middleware/FormidableUpload";
 import cloudinary from "#/utils/cloud";
 
@@ -46,13 +44,14 @@ var transport = nodemailer.createTransport({
 authRouter.post(
   "/register",
   validate(accountSchema),
-  async (req: createUser, res) => {
+  async (req: createUser, res: Response): Promise<void> => {
     const { email, password, name } = req.body;
 
     const existing = await users.findOne({ email: email });
 
     if (existing) {
-      return res.status(400).json({ message: "Account Email already exists" });
+      res.status(400).json({ message: "Account Email already exists" });
+      return;
     }
 
     const _user = new users({ email, password, name });
@@ -76,7 +75,8 @@ authRouter.post(
     });
 
     if (!(await userToken.compareToken(token))) {
-      return res.status(500).json({ error: "Token not valid" });
+      res.status(500).json({ error: "Token not valid" });
+      return;
     }
 
     res.status(201).json({
@@ -89,23 +89,26 @@ authRouter.post(
 authRouter.post(
   "/verify-email",
   validate(verifyEmailBody),
-  async (req: VerifyEmailRequest, res) => {
+  async (req: VerifyEmailRequest, res: Response): Promise<void> => {
     const { token, userId } = req.body;
 
     const user = await emailVerificationToken.findOne({ owner: userId });
 
     if (!user) {
-      return res.status(403).json({ error: "User not found" });
+      res.status(403).json({ error: "User not found" });
+      return;
     }
 
     if (user.verified) {
-      return res.status(422).json({ error: "User account already verified." });
+      res.status(422).json({ error: "User account already verified." });
+      return;
     }
 
     const matched = await user.compareToken(token);
 
     if (!matched) {
-      return res.status(403).json({ error: "Invalid token" });
+      res.status(403).json({ error: "Invalid token" });
+      return;
     }
 
     await users.findByIdAndUpdate(userId, {
@@ -118,49 +121,57 @@ authRouter.post(
   }
 );
 
-authRouter.post("/re-verify", validate(reVerifyEmailBody), async (req, res) => {
-  const { userId } = req.body;
-  await emailVerificationToken.findOneAndDelete({ owner: userId });
-  const token = generateToken(6);
-  await emailVerificationToken.create({ owner: userId, token });
-  
-  const user = await users.findById(userId);
-  
-  transport.sendMail({
-    to: user?.email,
-    from: "dkmawasha@gmail.com",
-    html: emailTemplate(token),
-    subject: "Email Verification",
-  });
+authRouter.post(
+  "/re-verify",
+  validate(reVerifyEmailBody),
+  async (req: Request, res: Response): Promise<void> => {
+    const { userId } = req.body;
+    await emailVerificationToken.findOneAndDelete({ owner: userId });
+    const token = generateToken(6);
+    await emailVerificationToken.create({ owner: userId, token });
 
-  res.status(200).json({ message: "OTP sent to email successfully" });
-});
+    const user = await users.findById(userId);
 
-authRouter.post("/forgot-password", async (req, res) => {
-  const { email } = req.body;
-  const user = await users.findOne({ email });
+    transport.sendMail({
+      to: user?.email,
+      from: "dkmawasha@gmail.com",
+      html: emailTemplate(token),
+      subject: "Email Verification",
+    });
 
-  if (!user) {
-    return res.status(404).json({ error: "User account not found" });
+    res.status(200).json({ message: "OTP sent to email successfully" });
   }
+);
 
-  // generate link
-  /* http://my-app.com/reset-password?token=1123&userId=aga777su */
-  const token = generateToken(6);
-  await passwordResetToken.create({ owner: user._id, token });
+authRouter.post(
+  "/forgot-password",
+  async (req: Request, res: Response): Promise<void> => {
+    const { email } = req.body;
+    const user = await users.findOne({ email });
 
-  const rsLink = `${RESET_LINK}?token=${token}&userId=${user._id}`;
+    if (!user) {
+      res.status(404).json({ error: "User account not found" });
+      return;
+    }
 
-  // res.json({link:rsLink})
-  transport.sendMail({
-    to: user?.email,
-    from: "dkmawasha@gmail.com",
-    html: emailResetTokenTemplate(rsLink),
-    subject: "Email Verification",
-  });
+    // generate link
+    /* http://my-app.com/reset-password?token=1123&userId=aga777su */
+    const token = generateToken(6);
+    await passwordResetToken.create({ owner: user._id, token });
 
-  res.status(200).json({ message: "reset link sent successfully." });
-});
+    const rsLink = `${RESET_LINK}?token=${token}&userId=${user._id}`;
+
+    // res.json({link:rsLink})
+    transport.sendMail({
+      to: user?.email,
+      from: "dkmawasha@gmail.com",
+      html: emailResetTokenTemplate(rsLink),
+      subject: "Email Verification",
+    });
+
+    res.status(200).json({ message: "reset link sent successfully." });
+  }
+);
 
 authRouter.post(
   "/verify-pass-reset-token",
@@ -173,20 +184,22 @@ authRouter.post(
   "/update-password",
   validate(passResetSchema),
   isValidPassResetToken,
-  async (req, res) => {
+  async (req: Request, res: Response): Promise<void> => {
     const { userId, password } = req.body;
     const user = await users.findById(userId);
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      res.status(404).json({ error: "User not found" });
+      return;
     }
 
     const passMatched = await user.comparePassword(password);
 
     if (passMatched) {
-      return res
+      res
         .status(422)
         .json({ message: "Password cannot be the same as the old one." });
+      return;
     }
 
     user.password = password;
@@ -209,19 +222,21 @@ authRouter.post(
 authRouter.post(
   "/login",
   validate(signInSchema),
-  async (req: signInUser, res) => {
+  async (req: signInUser, res: Response): Promise<void> => {
     const { email, password } = req.body;
 
     const user = await users.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      res.status(404).json({ message: "User not found" });
+      return;
     }
 
     const isPasswordMatching = await user.comparePassword(password);
 
     if (!isPasswordMatching) {
-      return res.status(403).json({ message: "Invalid email or password" });
+      res.status(403).json({ message: "Invalid email or password" });
+      return;
     }
 
     // creating a token
@@ -236,7 +251,7 @@ authRouter.post(
   }
 );
 
-authRouter.get("/is-auth", isAuthenticated, (req, res) => {
+authRouter.get("/is-auth", isAuthenticated, (req: Request, res: Response) => {
   res.status(200).json({ profile: req.user });
 });
 
@@ -251,7 +266,7 @@ authRouter.post(
   "/update-profile",
   fileParse,
   isAuthenticated,
-  async (req: RequestWithFiles, res) => {
+  async (req: RequestWithFiles, res: Response): Promise<void> => {
     const { name } = req.body;
     const attachment = req.files?.attachment;
 
@@ -262,13 +277,15 @@ authRouter.post(
     }
 
     if (typeof name !== "string") {
-      return res.status(422).json({ error: "Name must be a string" });
+      res.status(422).json({ error: "Name must be a string" });
+      return;
     }
 
     if (name.trim().length < 3) {
-      return res
+      res
         .status(422)
         .json({ error: "Name must be at least 3 characters long" });
+      return;
     }
 
     user.name = name;
@@ -295,25 +312,30 @@ authRouter.post(
   }
 );
 
-authRouter.post("/logout", isAuthenticated, async (req, res) => {
-  const { fromAll } = req.query;
-  const token = req.token;
+authRouter.post(
+  "/logout",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    const { fromAll } = req.query;
+    const token = req.token;
 
-  const user = await users.findById(req.user?.id);
+    const user = await users.findById(req.user?.id);
 
-  if (!user) {
-    return res.status(403).json({ message: "no user found." });
+    if (!user) {
+      res.status(403).json({ message: "no user found." });
+      return;
+    }
+
+    if (fromAll === "yes") {
+      user.tokens = [];
+    } else {
+      user.tokens = user.tokens.filter((t) => t !== token);
+    }
+
+    await user.save();
+
+    res.status(200).json({ message: "Logged out successfully." });
   }
-
-  if (fromAll === "yes") {
-    user.tokens = [];
-  } else {
-    user.tokens = user.tokens.filter((t) => t !== token);
-  }
-
-  await user.save();
-
-  res.status(200).json({ message: "Logged out successfully." });
-});
+);
 
 export default authRouter;

@@ -6,7 +6,7 @@ import History from "#/models/history";
 import Playlist from "#/models/playlist";
 import users from "#/models/users";
 import { getUserHistory } from "#/utils/helpers";
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 
 import mongoose, { Types } from "mongoose";
 import { isValidObjectId, PipelineStage } from "mongoose";
@@ -16,19 +16,21 @@ const profileRouter = Router();
 profileRouter.post(
   "/update-followers/:followerId",
   isAuthenticated,
-  async (req, res) => {
+  async (req: Request, res: Response): Promise<void> => {
     const { followerId } = req.params;
 
     let status: "added" | "removed";
 
     if (!isValidObjectId(followerId)) {
-      return res.status(403).json({ message: "Invalid follower id" });
+      res.status(403).json({ message: "Invalid follower id" });
+      return;
     }
 
     const user = await users.findById(followerId);
 
     if (!user) {
-      return res.status(404).json({ message: "not found." });
+      res.status(404).json({ message: "not found." });
+      return;
     }
 
     const alreadyFollower = await users.findOne({
@@ -68,77 +70,88 @@ profileRouter.post(
   }
 );
 
-profileRouter.get("/uploads", isAuthenticated, async (req, res) => {
-  const ownerId = req.user?.id;
+profileRouter.get(
+  "/uploads",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    const ownerId = req.user?.id;
 
-  const { pageNo = "0", limit = "20" } = req.query as PageRequestDocument;
+    const { pageNo = "0", limit = "20" } = req.query as PageRequestDocument;
 
-  const uploads = await Audio.find({ owner: ownerId })
-    .skip(parseInt(limit) * parseInt(pageNo))
-    .limit(parseInt(limit))
-    .sort("-createdAt");
+    const uploads = await Audio.find({ owner: ownerId })
+      .skip(parseInt(limit) * parseInt(pageNo))
+      .limit(parseInt(limit))
+      .sort("-createdAt");
 
-  const audios = uploads.map((item) => {
-    const { _id, title, about, file, poster, createdAt, owner, category } =
-      item;
-    return {
-      id: _id,
-      title,
-      about,
-      category,
-      file: file.url,
-      poster: poster.url,
-      date: createdAt,
-      owner: owner,
-    };
-  });
+    const audios = uploads.map((item) => {
+      const { _id, title, about, file, poster, createdAt, owner, category } =
+        item;
+      return {
+        id: _id,
+        title,
+        about,
+        category,
+        file: file.url,
+        poster: poster.url,
+        date: createdAt,
+        owner: owner,
+      };
+    });
 
-  res.status(200).json({ audios });
-});
-profileRouter.get("/uploads/:profileId", isAuthenticated, async (req, res) => {
-  const { profileId } = req.params;
-
-  const { pageNo = "0", limit = "20" } = req.query as PageRequestDocument;
-
-  if (!isValidObjectId(profileId)) {
-    return res.status(422).json({ message: "Invalid profile id" });
+    res.status(200).json({ audios });
   }
+);
+profileRouter.get(
+  "/uploads/:profileId",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    const { profileId } = req.params;
 
-  const uploads = await Audio.find({ owner: profileId })
-    .skip(parseInt(limit) * parseInt(pageNo))
-    .limit(parseInt(limit))
-    .sort("-createdAt");
+    const { pageNo = "0", limit = "20" } = req.query as PageRequestDocument;
 
-  const audios = uploads.map((item) => {
-    const { _id, title, about, file, poster, createdAt, owner } = item;
-    return {
-      id: _id,
-      title,
-      about,
-      file: file.url,
-      poster: poster.url,
-      date: createdAt,
-      owner: owner,
-    };
-  });
+    if (!isValidObjectId(profileId)) {
+      res.status(422).json({ message: "Invalid profile id" });
+      return;
+    }
 
-  res.status(200).json({ audios });
-});
+    const uploads = await Audio.find({ owner: profileId })
+      .skip(parseInt(limit) * parseInt(pageNo))
+      .limit(parseInt(limit))
+      .sort("-createdAt");
+
+    const audios = uploads.map((item) => {
+      const { _id, title, about, file, poster, createdAt, owner } = item;
+      return {
+        id: _id,
+        title,
+        about,
+        file: file.url,
+        poster: poster.url,
+        date: createdAt,
+        owner: owner,
+      };
+    });
+
+    res.status(200).json({ audios });
+  }
+);
 
 profileRouter.get(
   "/profileInfo/:profileId",
   isAuthenticated,
-  async (req, res) => {
+  async (req: Request, res: Response): Promise<void> => {
     const { profileId } = req.params;
 
     if (!isValidObjectId(profileId)) {
-      return res.status(422).json({ message: "Invalid profile id" });
+      res.status(422).json({ message: "Invalid profile id" });
+      return;
     }
 
     const userProfile = await users.findById(profileId);
 
     if (!userProfile) {
-      return res.status(404).json({ message: "Profile not found" });
+      res.status(404).json({ message: "Profile not found" });
+      return;
     }
 
     const { _id, name, followers, avatar } = userProfile;
@@ -157,13 +170,14 @@ profileRouter.get(
 profileRouter.get(
   "/publicPlaylist/:playlistId",
   isAuthenticated,
-  async (req, res) => {
+  async (req: Request, res: Response): Promise<void> => {
     const { playlistId } = req.params;
 
     const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
 
     if (!isValidObjectId(playlistId)) {
-      return res.status(422).json({ message: "Invalid profile id" });
+      res.status(422).json({ message: "Invalid profile id" });
+      return;
     }
 
     const playlist = await Playlist.find({
@@ -175,7 +189,8 @@ profileRouter.get(
       .sort("-createdAt");
 
     if (!playlist) {
-      return res.status(404).json({ playlist: [] });
+      res.status(404).json({ playlist: [] });
+      return;
     }
 
     const items = playlist.map((lst) => {
@@ -252,65 +267,69 @@ profileRouter.get(
 
 //   res.status(200).json({ audios });
 // });
-profileRouter.get("/recommended", isAuth, async (req, res) => {
-  try {
-    const user = req.user;
-    let matched: PipelineStage.Match = { $match: { _id: { $exists: true } } };
+profileRouter.get(
+  "/recommended",
+  isAuth,
+  async (req: Request, res: Response) => {
+    try {
+      const user = req.user;
+      let matched: PipelineStage.Match = { $match: { _id: { $exists: true } } };
 
-    if (user) {
-      // Fetch user history
-      const histories = await getUserHistory(req);
+      if (user) {
+        // Fetch user history
+        const histories = await getUserHistory(req);
 
-      // Extract categories if `histories` contains audio records
-      const categories = histories
-        .map((history) => history.category)
-        .filter(Boolean);
+        // Extract categories if `histories` contains audio records
+        const categories = histories
+          .map((history) => history.category)
+          .filter(Boolean);
 
-      if (categories.length > 0) {
-        matched = {
-          $match: {
-            category: {
-              $in: categories,
+        if (categories.length > 0) {
+          matched = {
+            $match: {
+              category: {
+                $in: categories,
+              },
             },
-          },
-        };
+          };
+        }
       }
+
+      const audios = await Audio.aggregate([
+        matched,
+        { $sort: { "likes.count": -1 } },
+        { $limit: 10 },
+        {
+          $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "owner",
+          },
+        },
+        { $unwind: "$owner" },
+        {
+          $project: {
+            _id: 0,
+            id: "$_id",
+            name: "$name",
+            title: "$title",
+            about: "$about",
+            category: "$category",
+            file: "$file.url",
+            poster: "$poster.url",
+            owner: { name: "$owner.name", id: "$owner._id" },
+          },
+        },
+      ]);
+
+      res.status(200).json({ audios });
+    } catch (error) {
+      console.error("Error fetching recommended audios:", error);
+      res.status(500).json({ error: "Internal Server Error" });
     }
-
-    const audios = await Audio.aggregate([
-      matched,
-      { $sort: { "likes.count": -1 } },
-      { $limit: 10 },
-      {
-        $lookup: {
-          from: "users",
-          localField: "owner",
-          foreignField: "_id",
-          as: "owner",
-        },
-      },
-      { $unwind: "$owner" },
-      {
-        $project: {
-          _id: 0,
-          id: "$_id",
-          name: "$name",
-          title: "$title",
-          about: "$about",
-          category: "$category",
-          file: "$file.url",
-          poster: "$poster.url",
-          owner: { name: "$owner.name", id: "$owner._id" },
-        },
-      },
-    ]);
-
-    res.status(200).json({ audios });
-  } catch (error) {
-    console.error("Error fetching recommended audios:", error);
-    res.status(500).json({ error: "Internal Server Error" });
   }
-});
+);
 
 // profileRouter.get("/auto-playlist", isAuthenticated, async (req, res) => {
 //   const [result] = await History.aggregate([
@@ -423,7 +442,15 @@ profileRouter.get("/auto-playlist", isAuthenticated, async (req, res) => {
     // Ensure plist is not null before accessing properties
     const finalList = [
       ...autoList,
-      ...(plist ? [{ id: plist._id, title: plist.title, itemsCount: plist.items.length }] : []),
+      ...(plist
+        ? [
+            {
+              id: plist._id,
+              title: plist.title,
+              itemsCount: plist.items.length,
+            },
+          ]
+        : []),
     ];
 
     res.status(200).json({ playlist: finalList });
@@ -433,71 +460,80 @@ profileRouter.get("/auto-playlist", isAuthenticated, async (req, res) => {
   }
 });
 
+profileRouter.get(
+  "/followers",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    const owner = req.user?.id;
 
-profileRouter.get("/followers", isAuthenticated, async (req, res) => {
-  const owner = req.user?.id;
+    if (!owner) {
+      res.status(403).json({ message: "unauthorized access." });
+      return;
+    }
 
-  if (!owner) return res.status(403).json({ message: "unauthorized access." });
+    const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
 
-  const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
-
-  const [result] = await users.aggregate([
-    { $match: { _id: new mongoose.Types.ObjectId(owner) } }, // Convert to ObjectId
-    {
-      $project: {
-        followers: {
-          $slice: [
-            "$followers",
-            parseInt(pageNo) * parseInt(limit),
-            parseInt(limit),
-          ],
-        }, // Correct slicing
+    const [result] = await users.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(owner) } }, // Convert to ObjectId
+      {
+        $project: {
+          followers: {
+            $slice: [
+              "$followers",
+              parseInt(pageNo) * parseInt(limit),
+              parseInt(limit),
+            ],
+          }, // Correct slicing
+        },
       },
-    },
-    {
-      $unwind: "$followers",
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "followers",
-        foreignField: "_id",
-        as: "userInfo",
+      {
+        $unwind: "$followers",
       },
-    },
-    {
-      $unwind: "$userInfo",
-    },
-    {
-      $group: {
-        _id: null,
-        followers: {
-          $push: {
-            id: "$userInfo._id",
-            name: "$userInfo.name",
-            avatar: "$userInfo.avatar.url",
+      {
+        $lookup: {
+          from: "users",
+          localField: "followers",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      {
+        $unwind: "$userInfo",
+      },
+      {
+        $group: {
+          _id: null,
+          followers: {
+            $push: {
+              id: "$userInfo._id",
+              name: "$userInfo.name",
+              avatar: "$userInfo.avatar.url",
+            },
           },
         },
       },
-    },
-  ]);
+    ]);
 
-  if (!result) {
-    return res.status(200).json({ followers: [] });
+    if (!result) {
+      res.status(200).json({ followers: [] });
+      return;
+    }
+
+    res.status(200).json({ followers: result.followers });
   }
-
-  res.status(200).json({ followers: result.followers });
-});
+);
 
 profileRouter.get(
   "/followers/:profileId",
   isAuthenticated,
-  async (req, res) => {
+  async (req: Request, res: Response): Promise<void> => {
     //   const owner = req.user?.id;
     const { profileId } = req.params;
 
-    if (!isValidObjectId(profileId))
-      return res.status(422).json({ message: "Invalid profile id." });
+    if (!isValidObjectId(profileId)) {
+      res.status(422).json({ message: "Invalid profile id." });
+      return;
+    }
 
     const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
 
@@ -543,164 +579,181 @@ profileRouter.get(
     ]);
 
     if (!result) {
-      return res.status(200).json({ followers: [] });
+      res.status(200).json({ followers: [] });
+      return;
     }
 
     res.status(200).json({ followers: result.followers });
   }
 );
 
-profileRouter.get("/followings", isAuthenticated, async (req, res) => {
-  const owner = req.user?.id;
+profileRouter.get(
+  "/followings",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    const owner = req.user?.id;
 
-  if (!owner) return res.status(403).json({ message: "unauthorized access." });
+    if (!owner) {
+      res.status(403).json({ message: "unauthorized access." });
+      return;
+    }
 
-  const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
+    const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
 
-  const [result] = await users.aggregate([
-    { $match: { _id: new mongoose.Types.ObjectId(owner) } }, // Convert to ObjectId
-    {
-      $project: {
-        followings: {
-          $slice: [
-            "$followings",
-            parseInt(pageNo) * parseInt(limit),
-            parseInt(limit),
-          ],
-        }, // Correct slicing
+    const [result] = await users.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(owner) } }, // Convert to ObjectId
+      {
+        $project: {
+          followings: {
+            $slice: [
+              "$followings",
+              parseInt(pageNo) * parseInt(limit),
+              parseInt(limit),
+            ],
+          }, // Correct slicing
+        },
       },
-    },
-    {
-      $unwind: "$followings",
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "followings",
-        foreignField: "_id",
-        as: "userInfo",
+      {
+        $unwind: "$followings",
       },
-    },
-    {
-      $unwind: "$userInfo",
-    },
-    {
-      $group: {
-        _id: null,
-        followings: {
-          $push: {
-            id: "$userInfo._id",
-            name: "$userInfo.name",
-            avatar: "$userInfo.avatar.url",
+      {
+        $lookup: {
+          from: "users",
+          localField: "followings",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      {
+        $unwind: "$userInfo",
+      },
+      {
+        $group: {
+          _id: null,
+          followings: {
+            $push: {
+              id: "$userInfo._id",
+              name: "$userInfo.name",
+              avatar: "$userInfo.avatar.url",
+            },
           },
         },
       },
-    },
-  ]);
+    ]);
 
-  if (!result) {
-    return res.status(200).json({ followings: [] });
+    if (!result) {
+      res.status(200).json({ followings: [] });
+      return;
+    }
+
+    res.status(200).json({ followers: result.followings });
   }
+);
 
-  res.status(200).json({ followers: result.followings });
-});
+profileRouter.get(
+  "/playlist-audios/:playlistId",
+  async (req: Request, res: Response): Promise<void> => {
+    // const owner = req.user?.id;
 
-profileRouter.get("/playlist-audios/:playlistId", async (req, res) => {
-  // const owner = req.user?.id;
+    const { playlistId } = req.params;
 
-  const { playlistId } = req.params;
+    if (!isValidObjectId(playlistId)) {
+      res.status(500).json({ message: "Invalid playlist id." });
+      return;
+    }
 
-  if (!isValidObjectId(playlistId))
-    return res.status(500).json({ message: "Invalid playlist id." });
+    const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
 
-  const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
-
-  const agg = [
-    {
-      $match: {
-        _id: new Types.ObjectId(playlistId),
-        visibility: { $ne: "private" },
-      },
-    },
-    {
-      $project: {
-        items: {
-          $slice: [
-            "items",
-            parseInt(pageNo) * parseInt(limit),
-            parseInt(limit),
-          ],
+    const agg = [
+      {
+        $match: {
+          _id: new Types.ObjectId(playlistId),
+          visibility: { $ne: "private" },
         },
-        title: "$title",
       },
-    },
-    { $unwind: "items" },
-    {
-      $lookup: {
-        from: "audios",
-        localField: "items",
-        foreignField: "_id",
-        as: "audios",
-      },
-    },
-    { $unwind: "$audios" },
-    {
-      $lookup: {
-        from: "users",
-        localField: "audios.owner",
-        foreignField: "_id",
-        as: "userInfo",
-      },
-    },
-    { $unwind: "$userInfo" },
-    {
-      $group: {
-        _id: {
+      {
+        $project: {
+          items: {
+            $slice: [
+              "items",
+              parseInt(pageNo) * parseInt(limit),
+              parseInt(limit),
+            ],
+          },
           title: "$title",
-          id: "$_id",
         },
-        audios: {
-          $push: {
-            id: "$audios._id",
-            title: "$audios.title",
-            about: "$audios.about",
-            category: "$audios.category",
-            file: "$audios.file.url",
-            poster: "$audios.poster.url",
-            owner: { name: "$userInfo.name", id: "$userInfo._id" },
+      },
+      { $unwind: "items" },
+      {
+        $lookup: {
+          from: "audios",
+          localField: "items",
+          foreignField: "_id",
+          as: "audios",
+        },
+      },
+      { $unwind: "$audios" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "audios.owner",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      { $unwind: "$userInfo" },
+      {
+        $group: {
+          _id: {
+            title: "$title",
+            id: "$_id",
+          },
+          audios: {
+            $push: {
+              id: "$audios._id",
+              title: "$audios.title",
+              about: "$audios.about",
+              category: "$audios.category",
+              file: "$audios.file.url",
+              poster: "$audios.poster.url",
+              owner: { name: "$userInfo.name", id: "$userInfo._id" },
+            },
           },
         },
       },
-    },
-    {
-      $project: {
-        _id: 0,
-        id: "$_id.id",
-        title: "$_id.title",
-        audios: "$$ROOT.audios",
+      {
+        $project: {
+          _id: 0,
+          id: "$_id.id",
+          title: "$_id.title",
+          audios: "$$ROOT.audios",
+        },
       },
-    },
-  ];
+    ];
 
-  const [playlistResult] = await Playlist.aggregate(agg);
-  const [autoPlaylistResult] = await AutoGeneratedPlaylist.aggregate(agg);
+    const [playlistResult] = await Playlist.aggregate(agg);
+    const [autoPlaylistResult] = await AutoGeneratedPlaylist.aggregate(agg);
 
-  if (!playlistResult) {
-    return res.status(200).json({ playlist: autoPlaylistResult });
+    if (!playlistResult) {
+      res.status(200).json({ playlist: autoPlaylistResult });
+      return;
+    }
+
+    res.status(200).json({ playlist: playlistResult });
   }
-
-  res.status(200).json({ playlist: playlistResult });
-});
+);
 profileRouter.get(
   "/private/playlist-audios/:playlistId",
   isAuthenticated,
-  async (req, res) => {
+  async (req: Request, res: Response): Promise<void> => {
     const owner = req.user?.id;
 
     const { playlistId } = req.params;
 
-    if (!isValidObjectId(playlistId))
-      return res.status(500).json({ message: "Invalid playlist id." });
+    if (!isValidObjectId(playlistId)) {
+      res.status(500).json({ message: "Invalid playlist id." });
+      return;
+    }
 
     const { limit = "20", pageNo = "0" } = req.query as PageRequestDocument;
 
@@ -776,20 +829,24 @@ profileRouter.get(
     const [autoPlaylistResult] = await AutoGeneratedPlaylist.aggregate(agg);
 
     if (!playlistResult) {
-      return res.status(200).json({ playlist: autoPlaylistResult });
+      res.status(200).json({ playlist: autoPlaylistResult });
+      return;
     }
 
     res.status(200).json({ playlist: playlistResult });
   }
 );
+
 profileRouter.get(
   "/is-following/:profileId",
   isAuthenticated,
-  async (req, res) => {
+  async (req: Request, res: Response): Promise<void> => {
     const { profileId } = req.params;
 
-    if (!isValidObjectId(profileId))
-      return res.status(422).json({ message: "Invalid profile id." });
+    if (!isValidObjectId(profileId)) {
+      res.status(422).json({ message: "Invalid profile id." });
+      return;
+    }
 
     const isFollowing = await users.findOne({
       _id: profileId,

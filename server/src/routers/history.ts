@@ -1,9 +1,9 @@
 import { PageRequestDocument } from "#/@types/misc";
 import { isAuthenticated } from "#/middleware/auth/auth";
 import { validate } from "#/middleware/vals/validator";
-import History, { HistoryDocument, historyType } from "#/models/history";
+import History, { historyType } from "#/models/history";
 import { historySchema } from "#/utils/validationSchema";
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import mongoose, { Types } from "mongoose";
 
 const historyRouter = Router();
@@ -12,7 +12,7 @@ historyRouter.post(
   "/",
   isAuthenticated,
   validate(historySchema),
-  async (req, res) => {
+  async (req: Request, res: Response): Promise<void> => {
     try {
       const ownerId = req.user?.id;
       const { progress, date, audio } = req.body;
@@ -33,7 +33,8 @@ historyRouter.post(
           all: [new_history],
         });
 
-        return res.status(200).json({ message: "History added successfully!" });
+        res.status(200).json({ message: "History added successfully!" });
+        return;
       }
 
       // Define today's date range
@@ -90,7 +91,8 @@ historyRouter.post(
       } else {
         // Ensure `history._id` exists before updating
         if (!history?._id) {
-          return res.status(404).json({ message: "History not found" });
+          res.status(404).json({ message: "History not found" });
+          return;
         }
 
         // Add new entry and update last
@@ -100,165 +102,182 @@ historyRouter.post(
         });
       }
 
-      return res.status(200).json({ success: true });
+      res.status(200).json({ success: true });
     } catch (error) {
       console.error("Error updating history:", error);
-      return res.status(500).json({ message: "Internal Server Error" });
+      res.status(500).json({ message: "Internal Server Error" });
+      return;
     }
   }
 );
 
-historyRouter.delete("/", isAuthenticated, async (req, res) => {
-  const removeAll = req.query.all === "yes";
+historyRouter.delete(
+  "/",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    const removeAll = req.query.all === "yes";
 
-  if (removeAll) {
-    await History.findOneAndDelete({ owner: req.user?.id });
-    return res
-      .status(200)
-      .json({ message: "All history deleted", success: true });
-  }
-
-  const histories = req.query.histories as string;
-  const historyIds = JSON.parse(histories) as string[];
-
-  await History.findOneAndUpdate(
-    { owner: req.user?.id },
-    { $pull: { all: { _id: historyIds } } }
-  );
-
-  res
-    .status(200)
-    .json({ message: "History deleted successfully!", success: true });
-});
-
-historyRouter.delete("/:id", isAuthenticated, async (req, res) => {
-  try {
-    const historyId = req.params.id;
-    const ownerId = req.user?.id;
-
-    if (!historyId) {
+    if (removeAll) {
+      await History.findOneAndDelete({ owner: req.user?.id });
       return res
-        .status(400)
-        .json({ message: "History ID is required", success: false });
+        .status(200)
+        .json({ message: "All history deleted", success: true });
     }
 
-    // Find the user's history document
-    const historyDoc = await History.findOne({ owner: ownerId });
+    const histories = req.query.histories as string;
+    const historyIds = JSON.parse(histories) as string[];
 
-    if (!historyDoc) {
-      return res
-        .status(404)
-        .json({ message: "No history found", success: false });
-    }
-
-    // Ensure `all` exists and is an array
-    if (!Array.isArray(historyDoc.all)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid history structure", success: false });
-    }
-
-    // Find index safely
-    const entryIndex = historyDoc.all.findIndex(
-      (item) => item?._id?.toString() === historyId
+    await History.findOneAndUpdate(
+      { owner: req.user?.id },
+      { $pull: { all: { _id: historyIds } } }
     );
 
-    if (entryIndex === -1) {
-      return res
-        .status(404)
-        .json({ message: "History entry not found", success: false });
-    }
-
-    // Remove the specific entry
-    historyDoc.all.splice(entryIndex, 1);
-
-    // Update `last` if the removed entry was the latest one
-    if (historyDoc.last && historyDoc.last._id?.toString() === historyId) {
-      historyDoc.last = historyDoc.all.length > 0 ? historyDoc.all[0] : null;
-    }
-
-    // Save the updated document
-    await historyDoc.save();
-
-    return res
+    res
       .status(200)
-      .json({ message: "History entry deleted successfully!", success: true });
-  } catch (error) {
-    console.error("Error deleting history:", error);
-    return res
-      .status(500)
-      .json({ message: "Internal server error", success: false });
+      .json({ message: "History deleted successfully!", success: true });
   }
-});
+);
 
-historyRouter.get("/", isAuthenticated, async (req, res) => {
-  try {
-    const { limit = "20", pageNo = "1" } = req.query as PageRequestDocument;
-    const limitValue = parseInt(limit);
-    const skipValue = (parseInt(pageNo) - 1) * limitValue; // Pagination logic
+historyRouter.delete(
+  "/:id",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const historyId = req.params.id;
+      const ownerId = req.user?.id;
 
-    // Ensure User ID is being received correctly
-    console.log("Fetching history for User ID:", req.user?.id);
+      if (!historyId) {
+        res
+          .status(400)
+          .json({ message: "History ID is required", success: false });
+        return;
+      }
 
-    const histories = await History.aggregate([
-      { $match: { owner: new mongoose.Types.ObjectId(req.user?.id) } }, // Ensure correct ID type
+      // Find the user's history document
+      const historyDoc = await History.findOne({ owner: ownerId });
 
-      { $unwind: "$all" }, // Expand history entries
+      if (!historyDoc) {
+        res.status(404).json({ message: "No history found", success: false });
+        return;
+      }
 
-      {
-        $lookup: {
-          from: "audios",
-          localField: "all.audio",
-          foreignField: "_id",
-          as: "audio",
-        },
-      },
+      // Ensure `all` exists and is an array
+      if (!Array.isArray(historyDoc.all)) {
+        res
+          .status(400)
+          .json({ message: "Invalid history structure", success: false });
+        return;
+      }
 
-      { $unwind: "$audio" }, // Extract audio details
+      // Find index safely
+      const entryIndex = historyDoc.all.findIndex(
+        (item) => item?._id?.toString() === historyId
+      );
 
-      {
-        $project: {
-          _id: 0,
-          id: "$all._id",
-          audioId: "$audio._id",
-          date: "$all.date",
-          title: "$audio.title",
-        },
-      },
+      if (entryIndex === -1) {
+        res
+          .status(404)
+          .json({ message: "History entry not found", success: false });
+        return;
+      }
 
-      { $sort: { date: -1 } }, // Sort by latest date first
+      // Remove the specific entry
+      historyDoc.all.splice(entryIndex, 1);
 
-      { $skip: skipValue }, // Pagination
-      { $limit: limitValue },
+      // Update `last` if the removed entry was the latest one
+      if (historyDoc.last && historyDoc.last._id?.toString() === historyId) {
+        historyDoc.last = historyDoc.all.length > 0 ? historyDoc.all[0] : null;
+      }
 
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-          audios: { $push: "$$ROOT" },
-        },
-      },
+      // Save the updated document
+      await historyDoc.save();
 
-      {
-        $project: {
-          _id: 0,
-          date: "$_id",
-          audios: "$audios",
-        },
-      },
-    ]);
-
-    if (!histories.length) {
-      console.log("No histories found for this user.");
-    } else {
-      console.log("Histories fetched:", histories);
+      res.status(200).json({
+        message: "History entry deleted successfully!",
+        success: true,
+      });
+    } catch (error) {
+      console.error("Error deleting history:", error);
+      res
+        .status(500)
+        .json({ message: "Internal server error", success: false });
+      return;
     }
-
-    res.status(200).json({ histories });
-  } catch (error) {
-    console.error("Error fetching history:", error);
-    res.status(500).json({ message: "Internal Server Error" });
   }
-});
+);
+
+historyRouter.get(
+  "/",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { limit = "20", pageNo = "1" } = req.query as PageRequestDocument;
+      const limitValue = parseInt(limit);
+      const skipValue = (parseInt(pageNo) - 1) * limitValue; // Pagination logic
+
+      // Ensure User ID is being received correctly
+      console.log("Fetching history for User ID:", req.user?.id);
+
+      const histories = await History.aggregate([
+        { $match: { owner: new mongoose.Types.ObjectId(req.user?.id) } }, // Ensure correct ID type
+
+        { $unwind: "$all" }, // Expand history entries
+
+        {
+          $lookup: {
+            from: "audios",
+            localField: "all.audio",
+            foreignField: "_id",
+            as: "audio",
+          },
+        },
+
+        { $unwind: "$audio" }, // Extract audio details
+
+        {
+          $project: {
+            _id: 0,
+            id: "$all._id",
+            audioId: "$audio._id",
+            date: "$all.date",
+            title: "$audio.title",
+          },
+        },
+
+        { $sort: { date: -1 } }, // Sort by latest date first
+
+        { $skip: skipValue }, // Pagination
+        { $limit: limitValue },
+
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+            audios: { $push: "$$ROOT" },
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+            date: "$_id",
+            audios: "$audios",
+          },
+        },
+      ]);
+
+      if (!histories.length) {
+        console.log("No histories found for this user.");
+      } else {
+        console.log("Histories fetched:", histories);
+      }
+
+      res.status(200).json({ histories });
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  }
+);
 
 // historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
 //   const { limit = "10", pageNo = "0" } = req.query as PageRequestDocument;
@@ -508,81 +527,90 @@ historyRouter.get("/", isAuthenticated, async (req, res) => {
 //     res.status(500).json({ error: "Internal server error" });
 //   }
 // });
-historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
-  try {
-    const { limit = "10", pageNo = "0" } = req.query as { limit: string; pageNo: string };
+historyRouter.get(
+  "/recently-played",
+  isAuthenticated,
+  async (req: Request, res: Response) => {
+    try {
+      const { limit = "10", pageNo = "0" } = req.query as {
+        limit: string;
+        pageNo: string;
+      };
 
-    const data = await History.aggregate([
-      { $match: { owner: new Types.ObjectId(req.user?.id) } },
+      const data = await History.aggregate([
+        { $match: { owner: new Types.ObjectId(req.user?.id) } },
 
-      // Unwind 'all' array to process each history entry separately
-      { $unwind: { path: "$all", preserveNullAndEmptyArrays: true } },
+        // Unwind 'all' array to process each history entry separately
+        { $unwind: { path: "$all", preserveNullAndEmptyArrays: true } },
 
-      // Lookup audio details
-      {
-        $lookup: {
-          from: "audios",
-          localField: "all.audio",
-          foreignField: "_id",
-          as: "audioDetails",
+        // Lookup audio details
+        {
+          $lookup: {
+            from: "audios",
+            localField: "all.audio",
+            foreignField: "_id",
+            as: "audioDetails",
+          },
         },
-      },
-      { $unwind: { path: "$audioDetails", preserveNullAndEmptyArrays: true } },
-
-      // Lookup owner details
-      {
-        $lookup: {
-          from: "users",
-          localField: "audioDetails.owner",
-          foreignField: "_id",
-          as: "owner",
+        {
+          $unwind: { path: "$audioDetails", preserveNullAndEmptyArrays: true },
         },
-      },
-      { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
 
-      // Group by audio ID, keeping only the most recent play
-      {
-        $group: {
-          _id: "$audioDetails._id",
-          id: { $first: "$audioDetails._id" },
-          title: { $first: "$audioDetails.title" },
-          date: { $max: "$all.date" }, // Keep the most recent date
-          progress: { $first: "$all.progress" },
-          poster: { $first: "$audioDetails.poster.url" },
-          file: { $first: "$audioDetails.file.url" },
-          category: { $first: "$audioDetails.category" },
-          owner: { $first: { name: "$owner.name", id: "$owner._id" } },
+        // Lookup owner details
+        {
+          $lookup: {
+            from: "users",
+            localField: "audioDetails.owner",
+            foreignField: "_id",
+            as: "owner",
+          },
         },
-      },
+        { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
 
-      // Sort by most recent play date
-      { $sort: { date: -1 } },
-
-      // Pagination
-      { $skip: parseInt(pageNo) * parseInt(limit) },
-      { $limit: parseInt(limit) },
-
-      // Final projection
-      {
-        $project: {
-          _id: 0,
-          id: 1,
-          title: 1,
-          date: 1,
-          progress: 1,
-          poster: 1,
-          file: 1,
-          category: 1,
-          owner: 1,
+        // Group by audio ID, keeping only the most recent play
+        {
+          $group: {
+            _id: "$audioDetails._id",
+            id: { $first: "$audioDetails._id" },
+            title: { $first: "$audioDetails.title" },
+            date: { $max: "$all.date" }, // Keep the most recent date
+            progress: { $first: "$all.progress" },
+            poster: { $first: "$audioDetails.poster.url" },
+            file: { $first: "$audioDetails.file.url" },
+            category: { $first: "$audioDetails.category" },
+            owner: { $first: { name: "$owner.name", id: "$owner._id" } },
+          },
         },
-      },
-    ]);
 
-    res.status(200).json({ audios: data });
-  } catch (error) {
-    console.error("Error fetching recently played history:", error);
-    res.status(500).json({ error: "Internal server error" });
+        // Sort by most recent play date
+        { $sort: { date: -1 } },
+
+        // Pagination
+        { $skip: parseInt(pageNo) * parseInt(limit) },
+        { $limit: parseInt(limit) },
+
+        // Final projection
+        {
+          $project: {
+            _id: 0,
+            id: 1,
+            title: 1,
+            date: 1,
+            progress: 1,
+            poster: 1,
+            file: 1,
+            category: 1,
+            owner: 1,
+          },
+        },
+      ]);
+
+      res.status(200).json({ audios: data });
+    } catch (error) {
+      console.error("Error fetching recently played history:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
-});
+);
 
 export default historyRouter;

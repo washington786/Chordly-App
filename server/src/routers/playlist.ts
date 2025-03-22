@@ -7,7 +7,7 @@ import {
   OldPlaylistValidationSchema,
   PlaylistValidationSchema,
 } from "#/utils/audioValidationSchema";
-import { Request, Router } from "express";
+import { Request, Response, Router } from "express";
 import { isValidObjectId, ObjectId } from "mongoose";
 // import playlist from "../models/"
 
@@ -36,7 +36,7 @@ playlistRouter.post(
   isAuthenticated,
   isVerified,
   validate(PlaylistValidationSchema),
-  async (req: CreatePlaylistDoc, res) => {
+  async (req: CreatePlaylistDoc, res: Response): Promise<void> => {
     const { title, resourceId, visibility } = req.body;
     const ownerId = req.user?.id;
 
@@ -44,7 +44,8 @@ playlistRouter.post(
       const audio = await Audio.findById(resourceId);
 
       if (!audio) {
-        return res.status(404).json({ error: "Audio not found" });
+        res.status(404).json({ error: "Audio not found" });
+        return;
       }
     }
 
@@ -65,24 +66,26 @@ playlistRouter.patch(
   isAuthenticated,
   isVerified,
   validate(OldPlaylistValidationSchema),
-  async (req: UpdatePlaylistDoc, res) => {
+  async (req: UpdatePlaylistDoc, res: Response): Promise<void> => {
     const { visibility, title, id, items } = req.body;
     const ownerId = req.user?.id as ObjectId;
 
     const playlist = await Playlist.findOneAndUpdate(
-      { _id: req.body.id, owner: ownerId },
+      { _id: id, owner: ownerId },
       { title, visibility },
       { new: true }
     );
 
     if (!playlist) {
-      return res.status(404).json({ message: "playlist not found!" });
+      res.status(404).json({ message: "playlist not found!" });
+      return;
     }
 
     if (items) {
       const audio = await Audio.findById(items);
       if (audio) {
-        return res.status(200).json({ message: "audio not found." });
+        res.status(200).json({ message: "audio not found." });
+        return;
       }
       // playlist.items.push(id);
       // await playlist.save();
@@ -95,105 +98,127 @@ playlistRouter.patch(
   }
 );
 
-playlistRouter.delete("/", isAuthenticated, async (req, res) => {
-  const { playlistId, resId, all } = req.query;
+playlistRouter.delete(
+  "/",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    const { playlistId, resId, all } = req.query;
 
-  if (!isValidObjectId(playlistId)) {
-    return res.status(422).json({ message: "Invalid playlist id" });
+    if (!isValidObjectId(playlistId)) {
+      res.status(422).json({ message: "Invalid playlist id" });
+      return;
+    }
+
+    if (all === "yes") {
+      const playlist = await Playlist.findByIdAndDelete({
+        _id: playlistId,
+        owner: req.user?.id,
+      });
+
+      if (!playlist) res.status(404).json({ message: "no playlist found" });
+      return;
+    }
+
+    if (resId) {
+      if (!isValidObjectId(resId)) {
+        res.status(422).json({ message: "Invalid audio id" });
+        return;
+      }
+      const lst = await Playlist.findOneAndUpdate(
+        { _id: playlistId, owner: req.user?.id },
+        { $pull: { items: resId } }
+      );
+      if (!lst) {
+        res.status(404).json({ message: "No such playlist" });
+        return;
+      }
+    }
+    res
+      .status(200)
+      .json({ message: "Resource removed successfully", success: true });
   }
+);
 
-  if (all === "yes") {
-    const playlist = await Playlist.findByIdAndDelete({
+playlistRouter.get(
+  "/by-profile",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    const { pageNo = "0", limit = "20" } = req.query as {
+      pageNo: string;
+      limit: string;
+    };
+
+    const ownerId = req.user?.id;
+
+    const playlist = await Playlist.find({
+      owner: ownerId,
+      visibility: { $ne: "auto" },
+    })
+      .skip(parseInt(pageNo) * parseInt(limit))
+      .limit(parseInt(limit))
+      .sort("-createdAt");
+
+    const response = playlist.map((item) => {
+      const { _id, title, items, visibility } = item;
+      return {
+        id: _id,
+        title: title,
+        items: items,
+        itemsCount: items.length,
+        visibility: visibility,
+      };
+    });
+    if (!playlist) {
+      res.status(404).json({ message: "no playlist found" });
+      return;
+    }
+
+    res.status(200).json(response);
+  }
+);
+
+playlistRouter.get(
+  "/:playlistId",
+  isAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    const { playlistId } = req.params;
+    if (!isValidObjectId(playlistId)) {
+      res.status(422).json({ message: "Invalid playlist id" });
+      return;
+    }
+
+    const playlist = await Playlist.findOne({
       _id: playlistId,
       owner: req.user?.id,
+    }).populate({
+      path: "items",
+      populate: {
+        path: "owner",
+        select: "name",
+      },
     });
 
-    if (!playlist)
-      return res.status(404).json({ message: "no playlist found" });
-  }
-
-  if (resId) {
-    if (!isValidObjectId(resId)) {
-      return res.status(422).json({ message: "Invalid audio id" });
+    if (!playlist) {
+      res.status(404).json({ message: "no playlist" });
+      return;
     }
-    const lst = await Playlist.findOneAndUpdate(
-      { _id: playlistId, owner: req.user?.id },
-      { $pull: { items: resId } }
-    );
-    if (!lst) return res.status(404).json({ message: "No such playlist" });
+
+    const audios = playlist.items.map((item_audio) => {
+      const { _id, title, about, category, file, poster, owner } =
+        item_audio as any;
+      return {
+        id: _id,
+        title: title,
+        about: about,
+        category: category,
+        file: file?.url,
+        poster: poster?.url,
+        owner: owner,
+      };
+    });
+
+    res.status(200).json(audios);
   }
-  res
-    .status(200)
-    .json({ message: "Resource removed successfully", success: true });
-});
-
-playlistRouter.get("/by-profile", isAuthenticated, async (req, res) => {
-  const { pageNo = "0", limit = "20" } = req.query as {
-    pageNo: string;
-    limit: string;
-  };
-
-  const ownerId = req.user?.id;
-
-  const playlist = await Playlist.find({
-    owner: ownerId,
-    visibility: { $ne: "auto" },
-  })
-    .skip(parseInt(pageNo) * parseInt(limit))
-    .limit(parseInt(limit))
-    .sort("-createdAt");
-
-  const response = playlist.map((item) => {
-    const { _id, title, items, visibility } = item;
-    return {
-      id: _id,
-      title: title,
-      items: items,
-      itemsCount: items.length,
-      visibility: visibility,
-    };
-  });
-  if (!playlist) return res.status(404).json({ message: "no playlist found" });
-
-  res.status(200).json(response);
-});
-
-playlistRouter.get("/:playlistId", isAuthenticated, async (req, res) => {
-  const { playlistId } = req.params;
-  if (!isValidObjectId(playlistId)) {
-    return res.status(422).json({ message: "Invalid playlist id" });
-  }
-
-  const playlist = await Playlist.findOne({
-    _id: playlistId,
-    owner: req.user?.id,
-  }).populate({
-    path: "items",
-    populate: {
-      path: "owner",
-      select: "name",
-    },
-  });
-
-  if (!playlist) {
-    return res.status(404).json({ message: "no playlist" });
-  }
-
-  const audios = playlist.items.map((item_audio) => {
-    const { _id, title, about, category, file, poster, owner } = item_audio;
-    return {
-      id: _id,
-      title: title,
-      about: about,
-      category: category,
-      file: file?.url,
-      poster: poster?.url,
-      owner: owner,
-    };
-  });
-
-  res.status(200).json(audios);
-});
-
+);
 
 export default playlistRouter;
