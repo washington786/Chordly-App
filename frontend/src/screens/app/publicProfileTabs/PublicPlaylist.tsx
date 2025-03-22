@@ -14,8 +14,8 @@ import ItemComponent from "@components/app/playlist/ItemComponent";
 import EmptyRecords from "@components/app/EmptyRecords";
 
 const PublicPlaylist = () => {
-  const route = useRoute<RouteProp<publicProfilePropTypes>>();
-  const { profileId } = route.params;
+  // const route = useRoute<RouteProp<publicProfilePropTypes>>();
+  // const { profileId } = route.params;
   const { data, error, isError, isLoading } = useFetchPublicProfilePlaylist();
 
   useEffect(() => {
@@ -27,8 +27,6 @@ const PublicPlaylist = () => {
   if (isLoading) {
     return <Loader />;
   }
-
-  console.log(data);
 
   return (
     <ScrollView

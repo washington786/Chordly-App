@@ -1,4 +1,10 @@
-import { Image, Pressable, ScrollView, View } from "react-native";
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import React, { FC } from "react";
 import { IconButton, Text } from "react-native-paper";
 import GlobalStyles from "@styles/GlobalStyles";
@@ -9,11 +15,12 @@ interface prop {
   recs: any;
   handlePlaylistAdd(item: AudioData): void;
   handleFavAdd?(item: AudioData): void;
+  OnAudioPress(audio: AudioData): void;
 }
-const Recommended: FC<prop> = ({ recs, handlePlaylistAdd }) => {
+const Recommended: FC<prop> = ({ recs, handlePlaylistAdd, OnAudioPress }) => {
   const { mutate: toggleFavorite } = useToggleFavorite();
   return (
-    <View style={{ paddingHorizontal:6 }}>
+    <View style={{ paddingHorizontal: 6 }}>
       <Text
         variant="titleMedium"
         style={[GlobalStyles.mainTitle, GlobalStyles.title]}
@@ -37,8 +44,8 @@ const Recommended: FC<prop> = ({ recs, handlePlaylistAdd }) => {
             >
               {recs.audios
                 .slice(colIndex * 2, colIndex * 2 + 2) // Get 2 items per column
-                .map((item: AudioData, rowIndex:number) => (
-                  <Pressable
+                .map((item: AudioData, rowIndex: number) => (
+                  <TouchableOpacity
                     key={item.id || `${colIndex}-${rowIndex}`}
                     style={{
                       width: 180, // Adjust column width
@@ -48,6 +55,7 @@ const Recommended: FC<prop> = ({ recs, handlePlaylistAdd }) => {
                       alignItems: "center",
                       justifyContent: "center",
                     }}
+                    onPress={() => OnAudioPress(item)}
                   >
                     {/* Top Action Icons */}
                     <View
@@ -114,7 +122,7 @@ const Recommended: FC<prop> = ({ recs, handlePlaylistAdd }) => {
                         {item.title || "Unknown Title"}
                       </Text>
                     </View>
-                  </Pressable>
+                  </TouchableOpacity>
                 ))}
             </View>
           )

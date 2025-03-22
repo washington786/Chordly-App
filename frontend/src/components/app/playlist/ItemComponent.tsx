@@ -8,11 +8,14 @@ import Icons from "react-native-vector-icons/Feather";
 
 interface props {
   playlist: Playlist;
-  onPress?: () => void;
+  onPress(id: string): void;
 }
 const ItemComponent: FC<props> = ({ playlist, onPress }) => {
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={() => onPress(playlist?.id)}
+    >
       <Icon name="queue-music" size={20} />
       <View style={styles.wrap}>
         <View>

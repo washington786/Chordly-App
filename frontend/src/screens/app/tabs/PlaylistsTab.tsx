@@ -11,6 +11,7 @@ import Toast from "react-native-toast-message";
 import EmptyRecords from "@components/app/EmptyRecords";
 import ItemComponent from "@components/app/playlist/ItemComponent";
 import { Playlist } from "src/@types/Audios";
+import { useFetchPlaylistAudios } from "@hooks/playList";
 
 const PlaylistsTab = () => {
   const queryClient = new QueryClient();
@@ -30,7 +31,12 @@ const PlaylistsTab = () => {
     return <Loader />;
   }
 
-  //   console.log("playlist: ",data);
+  // const {
+  //   data: playlistAudio,
+  //   isError: isPlaylistError,
+  //   error: playlistError,
+  //   isLoading: isPlaylist,
+  // } = useFetchPlaylistAudios();
 
   return (
     <ScrollView
@@ -45,7 +51,9 @@ const PlaylistsTab = () => {
       </ToastContainer>
 
       {data?.map((audio: Playlist) => {
-        return <ItemComponent key={audio.id} playlist={audio} />;
+        return (
+          <ItemComponent key={audio.id} playlist={audio} onPress={() => {}} />
+        );
       })}
       {!data?.length && <EmptyRecords />}
     </ScrollView>

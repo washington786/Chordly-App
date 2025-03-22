@@ -1,20 +1,30 @@
-import { Image, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import React, { useEffect } from "react";
 import { cod_gray } from "@styles/Colors";
 import { Divider, Text } from "react-native-paper";
-import { AudioPlay } from "src/@types/Audios";
 import { useFetchRecentlyPlayed } from "@hooks/historyQuery";
 import Loader from "@components/Loader";
 import { showToast } from "@utils/Toast";
+import { AudioData, AudioPlay } from "src/@types/Audios";
 
 interface item {
   category: string;
   title: string;
   poster: string;
   id?: string;
+  onPressAudio?(): void;
+}
+interface audio {
+  onAudioPress(item: AudioPlay): void;
 }
 
-const RecentlyPlayed = () => {
+const RecentlyPlayed = ({ onAudioPress }: audio) => {
   const { data, isError, error, isLoading } = useFetchRecentlyPlayed();
 
   useEffect(() => {
@@ -27,40 +37,73 @@ const RecentlyPlayed = () => {
     return <Loader />;
   }
   return (
+    // <View style={styles.container}>
+    //   <View>
+    //     <Text variant="titleMedium" style={styles.title}>
+    //       Recently Played
+    //     </Text>
+    //     <Divider />
+    //     <View style={{ flex: 1,backgroundColor:"yellow" }}>
+    //       <ScrollView
+    //         horizontal={true}
+    //         showsHorizontalScrollIndicator={false}
+    //         style={{ backgroundColor: "transparent" }}
+    //         contentContainerStyle={{
+    //           backgroundColor: "transparent",
+    //           gap: 4,
+    //           paddingHorizontal: 10,
+    //           flexDirection:"row"
+    //         }}
+    //       >
+    //         {data.map((audio: AudioPlay) => {
+    //           return (
+    //             <Item
+    //               key={audio.id + audio.owner.id + Math.random() * 10}
+    //               poster={audio.poster as string}
+    //               title={audio.title}
+    //               category={audio.category}
+    //               onPressAudio={() => onAudioPress(audio)}
+    //             />
+    //           );
+    //         })}
+    //       </ScrollView>
+    //     </View>
+    //   </View>
+    // </View>
     <View style={styles.container}>
-      <View>
-        <Text variant="titleMedium" style={styles.title}>
-          Recently Played
-        </Text>
-        <Divider />
+      <Text variant="titleMedium" style={styles.title}>
+        Recently Played
+      </Text>
+      <Divider />
+      <View style={{ flex: 1, backgroundColor: "transparent" }}>
         <ScrollView
           horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ backgroundColor: "transparent" }}
           contentContainerStyle={{
-            backgroundColor: "white",
-            flex: 1,
+            flexDirection: "row",
             gap: 4,
-            paddingHorizontal: 5,
+            paddingHorizontal: 6,
           }}
         >
-          {data.map((audio: item) => {
-            return (
-              <Item
-                key={audio.id}
-                poster={audio.poster}
-                title={audio.title}
-                category={audio.category}
-              />
-            );
-          })}
+          {data.map((audio: AudioPlay) => (
+            <Item
+              key={audio.id + audio.owner.id + Math.random() * 10}
+              poster={audio.poster as string}
+              title={audio.title}
+              category={audio.category}
+              onPressAudio={() => onAudioPress(audio)}
+            />
+          ))}
         </ScrollView>
       </View>
     </View>
   );
 };
 
-function Item({ category, title, poster }: item) {
+function Item({ category, title, poster, onPressAudio }: item) {
   return (
-    <View style={styles.con}>
+    <TouchableOpacity style={styles.con} onPress={onPressAudio}>
       <Image
         source={{
           uri: poster,
@@ -75,19 +118,28 @@ function Item({ category, title, poster }: item) {
           {category}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 export default RecentlyPlayed;
 
 const styles = StyleSheet.create({
+  // con: {
+  //   paddingVertical: 5,
+  //   paddingHorizontal: 7,
+  //   backgroundColor: cod_gray[50],
+  //   marginVertical: 8,
+  //   width: "30%",
+  //   borderRadius: 15,
+  //   alignItems: "center",
+  // },
   con: {
     paddingVertical: 5,
     paddingHorizontal: 7,
     backgroundColor: cod_gray[50],
     marginVertical: 8,
-    width: "30%",
+    width: 150,
     borderRadius: 15,
     alignItems: "center",
   },

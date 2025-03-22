@@ -448,19 +448,75 @@ historyRouter.get("/", isAuthenticated, async (req, res) => {
 //   }
 // });
 
+// historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
+//   try {
+//     const { limit = "10", pageNo = "0" } = req.query as PageRequestDocument;
+
+//     const data = await History.aggregate([
+//       { $match: { owner: new Types.ObjectId(req.user?.id) } },
+
+//       // Preserve documents even if 'all' is empty
+//       { $unwind: { path: "$all", preserveNullAndEmptyArrays: true } },
+
+//       { $sort: { "all.date": -1 } },
+//       { $skip: parseInt(pageNo) * parseInt(limit) },
+//       { $limit: parseInt(limit) },
+
+//       // Lookup audio details
+//       {
+//         $lookup: {
+//           from: "audios",
+//           localField: "all.audio",
+//           foreignField: "_id",
+//           as: "audioDetails",
+//         },
+//       },
+//       { $unwind: { path: "$audioDetails", preserveNullAndEmptyArrays: true } },
+
+//       // Lookup owner details
+//       {
+//         $lookup: {
+//           from: "users",
+//           localField: "audioDetails.owner",
+//           foreignField: "_id",
+//           as: "owner",
+//         },
+//       },
+//       { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+
+//       // Final projection
+//       {
+//         $project: {
+//           _id: 0,
+//           id: "$audioDetails._id",
+//           title: "$audioDetails.title",
+//           date: "$all.date",
+//           progress: "$all.progress",
+//           poster: "$audioDetails.poster.url",
+//           file: "$audioDetails.file.url",
+//           category: "$audioDetails.category",
+//           owner: { name: "$owner.name", id: "$owner._id" },
+//         },
+//       },
+//     ]);
+
+//     console.log("Fetched Data:", data); // Debugging line
+
+//     res.status(200).json({ audios:data });
+//   } catch (error) {
+//     console.error("Error fetching recently played history:", error);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
 historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
   try {
-    const { limit = "10", pageNo = "0" } = req.query as PageRequestDocument;
+    const { limit = "10", pageNo = "0" } = req.query as { limit: string; pageNo: string };
 
     const data = await History.aggregate([
       { $match: { owner: new Types.ObjectId(req.user?.id) } },
 
-      // Preserve documents even if 'all' is empty
+      // Unwind 'all' array to process each history entry separately
       { $unwind: { path: "$all", preserveNullAndEmptyArrays: true } },
-
-      { $sort: { "all.date": -1 } },
-      { $skip: parseInt(pageNo) * parseInt(limit) },
-      { $limit: parseInt(limit) },
 
       // Lookup audio details
       {
@@ -484,25 +540,45 @@ historyRouter.get("/recently-played", isAuthenticated, async (req, res) => {
       },
       { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
 
+      // Group by audio ID, keeping only the most recent play
+      {
+        $group: {
+          _id: "$audioDetails._id",
+          id: { $first: "$audioDetails._id" },
+          title: { $first: "$audioDetails.title" },
+          date: { $max: "$all.date" }, // Keep the most recent date
+          progress: { $first: "$all.progress" },
+          poster: { $first: "$audioDetails.poster.url" },
+          file: { $first: "$audioDetails.file.url" },
+          category: { $first: "$audioDetails.category" },
+          owner: { $first: { name: "$owner.name", id: "$owner._id" } },
+        },
+      },
+
+      // Sort by most recent play date
+      { $sort: { date: -1 } },
+
+      // Pagination
+      { $skip: parseInt(pageNo) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+
       // Final projection
       {
         $project: {
           _id: 0,
-          id: "$audioDetails._id",
-          title: "$audioDetails.title",
-          date: "$all.date",
-          progress: "$all.progress",
-          poster: "$audioDetails.poster.url",
-          file: "$audioDetails.file.url",
-          category: "$audioDetails.category",
-          owner: { name: "$owner.name", id: "$owner._id" },
+          id: 1,
+          title: 1,
+          date: 1,
+          progress: 1,
+          poster: 1,
+          file: 1,
+          category: 1,
+          owner: 1,
         },
       },
     ]);
 
-    console.log("Fetched Data:", data); // Debugging line
-
-    res.status(200).json({ audios:data });
+    res.status(200).json({ audios: data });
   } catch (error) {
     console.error("Error fetching recently played history:", error);
     res.status(500).json({ error: "Internal server error" });

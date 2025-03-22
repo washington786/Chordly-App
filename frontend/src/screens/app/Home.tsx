@@ -32,6 +32,8 @@ import useHistory from "@hooks/useHistory";
 import RecentlyPlayed from "@components/app/RecentlyPlayed";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { DashboardTypes } from "src/@types/AuthPropTypes";
+import { useSelector } from "react-redux";
+import { authState } from "src/store/auth";
 
 const Home = () => {
   const height = Dimensions.get("screen").height;
@@ -42,7 +44,7 @@ const Home = () => {
   const [value, setVisibility] = useState<"public" | "private">("public");
   const [title, setTitle] = useState<string>("");
   const [audio, setAudio] = useState<AudioData>();
-  const [audioSound, setAudioSound] = useState<AudioPlay | null>(null); // Initialize as null
+  const [audioSound, setAudioSound] = useState<AudioPlay | null>(null);
 
   const navigation = useNavigation<NavigationProp<DashboardTypes>>();
 
@@ -59,6 +61,8 @@ const Home = () => {
   } = useAudioPlayer(audioSound?.file || "");
 
   const { createHistory } = useHistory();
+
+  const { profile } = useSelector(authState);
 
   const {
     data,
@@ -119,7 +123,7 @@ const Home = () => {
     if (isPlaying && audioSound?.id) {
       postHistory(audioSound.id);
     }
-  }, [isPlaying, audioSound?.id]); // Runs only when `isPlaying` or `audioSound.id` changes
+  }, [isPlaying, audioSound?.id]);
 
   async function postHistory(audioId: string) {
     await createHistory({
@@ -151,6 +155,13 @@ const Home = () => {
       handleModalShow();
     }
   };
+
+  function onPressRecentlyPlayed(item:AudioPlay){
+    setAudioSound(item); // Update audioSound first
+    if (item) {
+      handleModalShow();
+    }
+  }
 
   const onLongPressAudio = () => {
     handleModalShow();
@@ -245,7 +256,10 @@ const Home = () => {
   };
 
   function navigationToProfile() {
+    console.log(audioSound?.owner.id);
+    console.log(profile?.id);
     handleModalShow();
+
     navigation.navigate("publicProfile", { profileId: audioSound?.owner.id });
   }
   return (
@@ -266,10 +280,12 @@ const Home = () => {
           />
           <Recommended
             recs={recs}
-            // handleFavAdd={handleAddFavorites}
             handlePlaylistAdd={handleAddPlaylist}
+            OnAudioPress={onPressAudio}
           />
-          <RecentlyPlayed />
+
+          <RecentlyPlayed onAudioPress={onPressRecentlyPlayed} />
+
           <PlaylistModal
             isPlaylistModalShow={isPlaylistModalShow}
             handleModalPlaylistShow={handleModalPlaylistShow}
