@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
-import { URL } from "#/utils/variables";
+// import { URL } from "#/utils/variables";
+
+import { URL } from "../utils/variables";
 
 mongoose
   .connect(URL as string)
