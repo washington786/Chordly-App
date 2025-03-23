@@ -9,7 +9,7 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: "#f2f2f2",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === "android" ? 0 : 0,
   },
 });
 export default SafeView;

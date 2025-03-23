@@ -9,10 +9,13 @@ const AppHeader = () => {
     <TouchableOpacity onPress={() => goBack()} style={styles.container}>
       <Icons
         name={Platform.OS === "android" ? "arrow-back" : "chevron-back"}
-        color={"blue"}
+        color={Platform.OS === "ios" ? "blue" : "gray"}
         size={20}
       />
-      <Text variant="bodySmall" style={{ color: "blue" }}>
+      <Text
+        variant="bodySmall"
+        style={{ color: Platform.OS === "ios" ? "blue" : "gray" }}
+      >
         go back
       </Text>
     </TouchableOpacity>
@@ -26,7 +29,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 4,
     alignItems: "center",
-    paddingVertical: 5,
-    paddingHorizontal:2
+    paddingVertical: Platform.OS === "android" ? 10 : 5,
+    paddingHorizontal: Platform.OS === "android" ? 8 : 2,
   },
 });

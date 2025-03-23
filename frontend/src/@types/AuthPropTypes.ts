@@ -31,7 +31,7 @@ export type publicProfilePropTypes = {
 };
 
 export type DashboardTypes = {
-  dashboard: undefined;
+  home: undefined;
   publicProfile: {
     profileId?: string;
   };

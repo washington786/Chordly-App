@@ -1,6 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Home, Profile, Upload } from "@utils/Exports";
+import { Upload } from "@utils/Exports";
 import { GreenMain, white } from "@styles/Colors";
 
 import AntIcons from "react-native-vector-icons/AntDesign";
@@ -21,7 +21,7 @@ const BottomNavigation = () => {
       }}
     >
       <BottomStack.Screen
-        name="home"
+        name="homeNavigation"
         component={HomeNavigation}
         options={{
           tabBarIcon: (props) => {

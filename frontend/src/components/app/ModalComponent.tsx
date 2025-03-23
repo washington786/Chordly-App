@@ -1,4 +1,4 @@
-import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import { Dimensions, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import React, { FC } from "react";
 import { IconButton, Modal } from "react-native-paper";
 
@@ -16,11 +16,13 @@ const ModalComponent: FC<mod> = ({
   closeModal,
   btnStyle,
 }) => {
+  const height = Dimensions.get("screen").height;
   return (
     <Modal
       onDismiss={onClose}
       visible={visible}
-      contentContainerStyle={{ flex: 1, backgroundColor: "white" }}
+      contentContainerStyle={{ flex: 1,backgroundColor:"transparent" }}
+      style={{ backgroundColor:"white",flex:1 }}
     >
       <View style={styles.wrap}>
         <View style={styles.align}>
@@ -42,5 +44,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     justifyContent: "flex-end",
     zIndex: 100,
+    position:"absolute",
+    top:-350,
+    right:10
   },
 });

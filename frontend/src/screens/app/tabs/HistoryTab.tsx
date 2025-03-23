@@ -63,7 +63,10 @@ const HistoryTab = () => {
 
   return (
     <PaperProvider>
-      <ScrollView contentContainerStyle={{ backgroundColor: "white", flex: 1 }}>
+      <ScrollView
+        contentContainerStyle={{ backgroundColor: "white" }}
+        style={{ flex: 1 }}
+      >
         <ToastContainer>
           <Toast />
         </ToastContainer>

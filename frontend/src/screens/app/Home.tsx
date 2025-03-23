@@ -1,5 +1,13 @@
-import { Dimensions, Image, ScrollView, StyleSheet, View } from "react-native";
-import React, { useEffect, useState } from "react";
+import {
+  Dimensions,
+  Image,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import React, { ReactNode, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Toast from "react-native-toast-message";
 import {
@@ -34,9 +42,11 @@ import { NavigationProp, useNavigation } from "@react-navigation/native";
 import { DashboardTypes } from "src/@types/AuthPropTypes";
 import { useSelector } from "react-redux";
 import { authState } from "src/store/auth";
+import AudioModal from "@components/app/home/AudioModal";
+import { useToggleFavorite } from "@hooks/useFavorites";
 
+const height = Dimensions.get("screen").height;
 const Home = () => {
-  const height = Dimensions.get("screen").height;
   const queryClient = useQueryClient();
   const [isModalShow, setModalShow] = useState<boolean>(false);
   const [isPlaylistModalShow, setPlaylistModalShow] = useState<boolean>(false);
@@ -125,6 +135,8 @@ const Home = () => {
     }
   }, [isPlaying, audioSound?.id]);
 
+  const { mutate: toggleFavorite } = useToggleFavorite();
+
   async function postHistory(audioId: string) {
     await createHistory({
       audio: audioId,
@@ -156,7 +168,7 @@ const Home = () => {
     }
   };
 
-  function onPressRecentlyPlayed(item:AudioPlay){
+  function onPressRecentlyPlayed(item: AudioPlay) {
     setAudioSound(item); // Update audioSound first
     if (item) {
       handleModalShow();
@@ -316,78 +328,77 @@ const Home = () => {
         </ScrollView>
       }
     >
-      <ModalComponent
-        visible={isModalShow}
-        onClose={handleModalShow}
-        closeModal={handleModalShow}
-        btnStyle={{ backgroundColor: "white" }}
-      >
-        <View
-          style={{
-            ...StyleSheet.absoluteFillObject,
-            backgroundColor: "white",
-            flex: 1,
-            height: height,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+      <AudioModal isVisible={isModalShow}>
+        <LinearGradient
+          colors={["#AACBAE", "#3A5B3E", "#2A3D2C"]}
+          style={[
+            styles.background,
+            {
+              height: height,
+              flex: 1,
+              zIndex: 100,
+              borderWidth: 2,
+            },
+          ]}
         >
-          <LinearGradient
-            colors={["#AACBAE", "#3A5B3E", "#2A3D2C"]}
-            style={styles.background}
-          >
-            <Image source={{ uri: audioSound?.poster }} style={styles.image} />
-            <View style={{ marginTop: 20, alignItems: "center" }}>
-              <Text variant="displaySmall" style={styles.txtClr}>
-                {audioSound?.title}
-              </Text>
-              <Text variant="bodySmall" style={styles.txtClr}>
-                {audioSound?.category}
-              </Text>
-              {isLoading ? (
-                <ActivityIndicator size="small" color="#0000ff" />
-              ) : (
-                <AudioProgressBarComponent
-                  duration={duration}
-                  handleSeek={handleSeek}
-                  isPlaying={isPlaying}
-                  playPauseAudio={playPauseAudio}
-                  position={position}
-                  setPosition={setPosition}
-                  formatTime={formatTime}
-                />
-              )}
-            </View>
+          <View style={styles.align}>
+            <IconButton
+              icon={"close"}
+              onPress={() => setModalShow(false)}
+              style={{ backgroundColor: "white" }}
+            />
+          </View>
+          <Image source={{ uri: audioSound?.poster }} style={styles.image} />
+          <View style={{ marginTop: 20, alignItems: "center" }}>
+            <Text variant="displaySmall" style={styles.txtClr}>
+              {audioSound?.title}
+            </Text>
+            <Text variant="bodySmall" style={styles.txtClr}>
+              {audioSound?.category}
+            </Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#0000ff" />
+            ) : (
+              <AudioProgressBarComponent
+                duration={duration}
+                handleSeek={handleSeek}
+                isPlaying={isPlaying}
+                playPauseAudio={playPauseAudio}
+                position={position}
+                setPosition={setPosition}
+                formatTime={formatTime}
+              />
+            )}
+          </View>
 
-            <View
-              style={{
-                marginTop: 120,
-                alignItems: "center",
-                flexDirection: "row",
-              }}
-            >
-              <IconButton
-                icon={"account-music-outline"}
-                size={70}
-                iconColor={"#FFFFFF"}
-                onPress={navigationToProfile} // Add a function
-              />
-              <IconButton
-                icon={"play-circle"}
-                size={70}
-                iconColor={"#FFFFFF"}
-                onPress={playPauseAudio}
-              />
-              <IconButton
-                icon={"pause-circle"}
-                size={70}
-                iconColor={"#FFFFFF"}
-                onPress={() => {}} // Add a function
-              />
-            </View>
-          </LinearGradient>
-        </View>
-      </ModalComponent>
+          <View
+            style={{
+              marginTop: 120,
+              alignItems: "center",
+              flexDirection: "row",
+            }}
+          >
+            <IconButton
+              icon={"account-music-outline"}
+              size={70}
+              iconColor={"#FFFFFF"}
+              onPress={navigationToProfile}
+            />
+            <IconButton
+              icon={isPlaying ? "pause-circle" : "play-circle"}
+              size={70}
+              iconColor={"#FFFFFF"}
+              onPress={playPauseAudio}
+            />
+            <IconButton
+              icon={"account-heart"}
+              size={70}
+              iconColor={"#FFFFFF"}
+              onPress={() => toggleFavorite(audioSound?.id as string)}
+            />
+          </View>
+        </LinearGradient>
+      </AudioModal>
     </PaperProviders>
   );
 
@@ -540,6 +551,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "100%",
+    height: height,
   },
   txtClr: {
     color: "white",
@@ -563,6 +575,15 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     marginLeft: 10,
+  },
+  align: {
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    backgroundColor: "transparent",
+    zIndex: 100,
+    position: "absolute",
+    top: Platform.OS === "android" ? 0 : 45,
+    right: 0,
   },
 });
 
